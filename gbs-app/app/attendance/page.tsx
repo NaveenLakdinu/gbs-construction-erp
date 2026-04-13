@@ -393,56 +393,61 @@ export default function AttendancePage() {
                     </svg>
                   </div>
                 </div>
-                <p className="text-green-400 font-medium text-lg">All workers are present today</p>
+                <p className="text-green-400 font-medium text-lg">✅ All workers are present today</p>
                 <p className="text-gray-400 text-sm mt-1">Great job on perfect attendance!</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {attendanceSummary.absent > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                      <h4 className="text-red-400 font-medium">Absent ({attendanceSummary.absent})</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {workers
-                        .filter(worker => attendanceData.get(worker.id) === 'Absent')
-                        .map(worker => (
-                          <div key={worker.id} className="bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-white text-sm">{worker.name}</span>
-                            </div>
+              <div className="space-y-3">
+                {workers
+                  .filter(worker => attendanceData.get(worker.id) !== 'Present')
+                  .map(worker => {
+                    const status = attendanceData.get(worker.id);
+                    const isAbsent = status === 'Absent';
+                    const isHalfDay = status === 'Half Day';
+                    
+                    return (
+                      <div key={worker.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
+                        {/* Status Indicator */}
+                        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                          isAbsent ? 'bg-red-500' : 
+                          isHalfDay ? 'bg-yellow-500' : 
+                          'bg-green-500'
+                        }`}></div>
+                        
+                        {/* Worker Name and Status */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">{worker.name}</span>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              isAbsent ? 'bg-red-600 text-white' : 
+                              isHalfDay ? 'bg-yellow-600 text-white' : 
+                              'bg-green-600 text-white'
+                            }`}>
+                              {status}
+                            </span>
                           </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-                
-                {attendanceSummary.halfDay > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                      <h4 className="text-yellow-400 font-medium">Half Day ({attendanceSummary.halfDay})</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {workers
-                        .filter(worker => attendanceData.get(worker.id) === 'Half Day')
-                        .map(worker => (
-                          <div key={worker.id} className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 12.293a1 1 0 101.414 1.414L10 12.414l1.293 1.293a1 1 0 001.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-white text-sm">{worker.name}</span>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
+                        </div>
+                        
+                        {/* Status Icon */}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          isAbsent ? 'bg-red-600' : 
+                          isHalfDay ? 'bg-yellow-600' : 
+                          'bg-green-600'
+                        }`}>
+                          {isAbsent && (
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {isHalfDay && (
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 12.293a1 1 0 101.414 1.414L10 12.414l1.293 1.293a1 1 0 001.414-1.414L11 10.586V7z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>
