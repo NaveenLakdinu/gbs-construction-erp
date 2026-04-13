@@ -1,17 +1,24 @@
 import Link from 'next/link';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          GBS Construction ERP Dashboard
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              GBS Construction ERP Dashboard
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your construction business</p>
+          </div>
+          <ThemeToggle />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link
             href="/projects"
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -20,32 +27,49 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Projects</h3>
-                <p className="text-gray-600">Manage construction projects</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Projects</h3>
+                <p className="text-gray-600 dark:text-gray-400">Manage construction projects</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/workers"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
+          >
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Workers</h3>
+                <p className="text-gray-600 dark:text-gray-400">Manage construction workers</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/employees"
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Employees</h3>
-                <p className="text-gray-600">Manage employee records</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Employees</h3>
+                <p className="text-gray-600 dark:text-gray-400">Manage employee records</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/inventory"
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -54,15 +78,15 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Inventory</h3>
-                <p className="text-gray-600">Manage materials and equipment</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Inventory</h3>
+                <p className="text-gray-600 dark:text-gray-400">Manage materials and equipment</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/financial"
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -71,15 +95,15 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Financial</h3>
-                <p className="text-gray-600">Manage financial records</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Financial</h3>
+                <p className="text-gray-600 dark:text-gray-400">Manage financial records</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/reports"
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -88,15 +112,15 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Reports</h3>
-                <p className="text-gray-600">View reports and analytics</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Reports</h3>
+                <p className="text-gray-600 dark:text-gray-400">View reports and analytics</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/settings"
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -105,8 +129,8 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Settings</h3>
-                <p className="text-gray-600">Application settings</p>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Settings</h3>
+                <p className="text-gray-600 dark:text-gray-400">Application settings</p>
               </div>
             </div>
           </Link>
