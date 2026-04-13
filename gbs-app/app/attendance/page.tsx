@@ -47,7 +47,7 @@ export default function AttendancePage() {
   useEffect(() => {
     if (selectedProject && selectedDate) {
       fetchWorkers();
-      fetchExistingAttendance();
+      fetchAttendanceData();
     } else {
       setInitialLoading(false);
     }
@@ -102,6 +102,37 @@ export default function AttendancePage() {
   };
 
   const fetchExistingAttendance = async () => {
+    if (!selectedProject || !selectedDate) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `/api/attendance?project_id=${selectedProject}&date=${selectedDate}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setExistingAttendance(data);
+        
+        // Update attendance data with existing records
+        const updatedAttendance = new Map<number, 'Present' | 'Absent' | 'Half Day'>();
+        workers.forEach((worker: Worker) => {
+          const existingRecord = data.find((record: AttendanceRecord) => 
+            record.worker_id === worker.id
+          );
+          updatedAttendance.set(worker.id, existingRecord ? existingRecord.status : 'Present');
+        });
+        setAttendanceData(updatedAttendance);
+      }
+    } catch (error) {
+      console.error('Failed to fetch attendance:', error);
+      setMessage({ type: 'error', text: 'Failed to fetch existing attendance' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch attendance data whenever date or project changes
+  const fetchAttendanceData = async () => {
     if (!selectedProject || !selectedDate) return;
     
     try {
@@ -188,12 +219,12 @@ export default function AttendancePage() {
     }
   };
 
-  // Calculate attendance summary
+  // Calculate attendance summary from fetched data
   const attendanceSummary = {
     total: workers.length,
-    present: Array.from(attendanceData.values()).filter(status => status === 'Present').length,
-    absent: Array.from(attendanceData.values()).filter(status => status === 'Absent').length,
-    halfDay: Array.from(attendanceData.values()).filter(status => status === 'Half Day').length,
+    present: existingAttendance.filter(record => record.status === 'Present').length,
+    absent: existingAttendance.filter(record => record.status === 'Absent').length,
+    halfDay: existingAttendance.filter(record => record.status === 'Half Day').length,
   };
 
   return (
@@ -262,20 +293,56 @@ export default function AttendancePage() {
             <h3 className="text-lg font-semibold text-white mb-4">Attendance Summary</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">{attendanceSummary.total}</div>
-                <div className="text-sm text-gray-400">Total Workers</div>
+                {loading ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 w-16 bg-gray-700 rounded mb-2"></div>
+                    <div className="h-4 w-12 bg-gray-700 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-white">{attendanceSummary.total}</div>
+                    <div className="text-sm text-gray-400">Total Workers</div>
+                  </>
+                )}
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-400">{attendanceSummary.present}</div>
-                <div className="text-sm text-gray-400">Present</div>
+                {loading ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 w-16 bg-green-700 rounded mb-2"></div>
+                    <div className="h-4 w-12 bg-green-700 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-green-400">{attendanceSummary.present}</div>
+                    <div className="text-sm text-gray-400">Present</div>
+                  </>
+                )}
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-400">{attendanceSummary.absent}</div>
-                <div className="text-sm text-gray-400">Absent</div>
+                {loading ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 w-16 bg-red-700 rounded mb-2"></div>
+                    <div className="h-4 w-12 bg-red-700 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-red-400">{attendanceSummary.absent}</div>
+                    <div className="text-sm text-gray-400">Absent</div>
+                  </>
+                )}
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-400">{attendanceSummary.halfDay}</div>
-                <div className="text-sm text-gray-400">Half Day</div>
+                {loading ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 w-16 bg-yellow-700 rounded mb-2"></div>
+                    <div className="h-4 w-12 bg-yellow-700 rounded"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-yellow-400">{attendanceSummary.halfDay}</div>
+                    <div className="text-sm text-gray-400">Half Day</div>
+                  </>
+                )}
               </div>
             </div>
           </div>
