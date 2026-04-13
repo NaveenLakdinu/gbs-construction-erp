@@ -37,7 +37,8 @@ export default function AttendancePage() {
   const [existingAttendance, setExistingAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     fetchProjects();
@@ -47,8 +48,20 @@ export default function AttendancePage() {
     if (selectedProject && selectedDate) {
       fetchWorkers();
       fetchExistingAttendance();
+    } else {
+      setInitialLoading(false);
     }
   }, [selectedProject, selectedDate]);
+
+  // Auto-dismiss notifications after 5 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   const fetchProjects = async () => {
     try {
@@ -56,9 +69,11 @@ export default function AttendancePage() {
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
+        setInitialLoading(false);
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
+      setInitialLoading(false);
     }
   };
 
@@ -110,6 +125,7 @@ export default function AttendancePage() {
       }
     } catch (error) {
       console.error('Failed to fetch attendance:', error);
+      setMessage({ type: 'error', text: 'Failed to fetch existing attendance' });
     } finally {
       setLoading(false);
     }
@@ -123,7 +139,7 @@ export default function AttendancePage() {
 
   const saveAttendance = async () => {
     if (!selectedProject || !selectedDate) {
-      setMessage('Please select a project and date');
+      setMessage({ type: 'error', text: 'Please select a project and date' });
       return;
     }
 
@@ -147,13 +163,13 @@ export default function AttendancePage() {
       );
 
       await Promise.all(promises);
-      setMessage('Attendance saved successfully!');
+      setMessage({ type: 'success', text: 'Attendance saved successfully!' });
       
       // Refresh existing attendance
       await fetchExistingAttendance();
     } catch (error) {
       console.error('Failed to save attendance:', error);
-      setMessage('Failed to save attendance');
+      setMessage({ type: 'error', text: 'Failed to save attendance' });
     } finally {
       setSaving(false);
     }
@@ -170,6 +186,14 @@ export default function AttendancePage() {
       default:
         return 'bg-gray-600 hover:bg-gray-700 text-white';
     }
+  };
+
+  // Calculate attendance summary
+  const attendanceSummary = {
+    total: workers.length,
+    present: Array.from(attendanceData.values()).filter(status => status === 'Present').length,
+    absent: Array.from(attendanceData.values()).filter(status => status === 'Absent').length,
+    halfDay: Array.from(attendanceData.values()).filter(status => status === 'Half Day').length,
   };
 
   return (
@@ -232,19 +256,65 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* Message */}
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.includes('success') 
-              ? 'bg-green-900/50 border border-green-700 text-green-300' 
-              : 'bg-red-900/50 border border-red-700 text-red-300'
-          }`}>
-            {message}
+        {/* Attendance Summary */}
+        {workers.length > 0 && (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4">Attendance Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{attendanceSummary.total}</div>
+                <div className="text-sm text-gray-400">Total Workers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">{attendanceSummary.present}</div>
+                <div className="text-sm text-gray-400">Present</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-400">{attendanceSummary.absent}</div>
+                <div className="text-sm text-gray-400">Absent</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-400">{attendanceSummary.halfDay}</div>
+                <div className="text-sm text-gray-400">Half Day</div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && (
+        {/* Message */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-lg flex items-center justify-between ${
+            message.type === 'success' 
+              ? 'bg-green-900/50 border border-green-700 text-green-300' 
+              : 'bg-red-900/50 border border-red-700 text-red-300'
+          }`}>
+            <span>{message.text}</span>
+            <button
+              onClick={() => setMessage(null)}
+              className="ml-4 text-white hover:text-gray-300 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Initial Loading State */}
+        {initialLoading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="absolute inset-0 w-12 h-12 border-4 border-blue-300 border-t-transparent rounded-full animate-spin" style={{ animationDelay: '0.15s' }}></div>
+              </div>
+              <p className="text-gray-400 text-lg">Loading attendance system...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Data Loading State */}
+        {!initialLoading && loading && (
           <div className="flex justify-center items-center py-12">
             <div className="flex flex-col items-center gap-3">
               <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -254,7 +324,7 @@ export default function AttendancePage() {
         )}
 
         {/* Workers List */}
-        {!loading && workers.length > 0 && (
+        {!initialLoading && !loading && workers.length > 0 && (
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-white/20">
               <h2 className="text-xl font-semibold text-white">
@@ -324,7 +394,7 @@ export default function AttendancePage() {
         )}
 
         {/* Empty State */}
-        {!loading && selectedProject && workers.length === 0 && (
+        {!initialLoading && !loading && selectedProject && workers.length === 0 && (
           <div className="text-center py-12 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl">
             <p className="text-gray-400 text-lg">No workers found for this project</p>
             <p className="text-gray-500 text-sm mt-2">
@@ -334,7 +404,7 @@ export default function AttendancePage() {
         )}
 
         {/* No Project Selected */}
-        {!loading && !selectedProject && (
+        {!initialLoading && !loading && !selectedProject && (
           <div className="text-center py-12 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl">
             <p className="text-gray-400 text-lg">Select a project to manage attendance</p>
             <p className="text-gray-500 text-sm mt-2">
