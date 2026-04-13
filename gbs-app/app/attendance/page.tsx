@@ -379,6 +379,75 @@ export default function AttendancePage() {
           </div>
         )}
 
+        {/* Daily Exceptions */}
+        {workers.length > 0 && !loading && (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4">Daily Exceptions</h3>
+            
+            {attendanceSummary.absent === 0 && attendanceSummary.halfDay === 0 ? (
+              <div className="text-center py-6">
+                <div className="flex justify-center mb-3">
+                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-green-400 font-medium text-lg">All workers are present today</p>
+                <p className="text-gray-400 text-sm mt-1">Great job on perfect attendance!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {attendanceSummary.absent > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                      <h4 className="text-red-400 font-medium">Absent ({attendanceSummary.absent})</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {workers
+                        .filter(worker => attendanceData.get(worker.id) === 'Absent')
+                        .map(worker => (
+                          <div key={worker.id} className="bg-red-900/20 border border-red-700/30 rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-white text-sm">{worker.name}</span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                
+                {attendanceSummary.halfDay > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                      <h4 className="text-yellow-400 font-medium">Half Day ({attendanceSummary.halfDay})</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {workers
+                        .filter(worker => attendanceData.get(worker.id) === 'Half Day')
+                        .map(worker => (
+                          <div key={worker.id} className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 12.293a1 1 0 101.414 1.414L10 12.414l1.293 1.293a1 1 0 001.414-1.414L11 10.586V7z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-white text-sm">{worker.name}</span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Message */}
         {message && (
           <div className={`mb-6 p-4 rounded-lg flex items-center justify-between ${
