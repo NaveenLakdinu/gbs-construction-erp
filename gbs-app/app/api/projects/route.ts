@@ -1,20 +1,7 @@
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { defineConfig } from '@prisma/config';
 
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        const { name, location } = body;
-
-        const newProject = await prisma.project.create({
-            data: {
-                name,
-                location,
-            },
-        });
-
-        return NextResponse.json(newProject);
-    } catch (error) {
-        return NextResponse.json({ error: "Database error" }, { status: 500 });
-    }
-}
+export default defineConfig({
+  datasource: {
+    url: process.env.DATABASE_URL,
+  },
+});
