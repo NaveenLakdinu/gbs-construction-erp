@@ -83,6 +83,16 @@ export default function ProjectsPage() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Link
+              href="/attendance"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-all"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10M8 3v10" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="8" cy="8" r="6" stroke="white" strokeWidth="1.5" fill="none"/>
+              </svg>
+              Attendance
+            </Link>
+            <Link
               href="/workers"
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 active:scale-95 text-white text-sm font-medium py-2.5 px-5 rounded-lg transition-all"
             >
