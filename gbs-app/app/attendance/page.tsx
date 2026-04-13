@@ -206,16 +206,47 @@ export default function AttendancePage() {
     }
   };
 
-  const getStatusColor = (status: 'Present' | 'Absent' | 'Half Day') => {
+  const getStatusColor = (status: 'Present' | 'Absent' | 'Half Day', isActive: boolean) => {
+    if (!isActive) {
+      return 'bg-gray-700/50 hover:bg-gray-700/70 text-gray-400 border border-gray-600';
+    }
+    
     switch (status) {
       case 'Present':
-        return 'bg-green-600 hover:bg-green-700 text-white';
+        return 'bg-green-600 hover:bg-green-700 text-white border-2 border-green-400 shadow-lg shadow-green-600/30';
       case 'Absent':
-        return 'bg-red-600 hover:bg-red-700 text-white';
+        return 'bg-red-600 hover:bg-red-700 text-white border-2 border-red-400 shadow-lg shadow-red-600/30';
       case 'Half Day':
-        return 'bg-yellow-600 hover:bg-yellow-700 text-white';
+        return 'bg-yellow-600 hover:bg-yellow-700 text-white border-2 border-yellow-400 shadow-lg shadow-yellow-600/30';
       default:
         return 'bg-gray-600 hover:bg-gray-700 text-white';
+    }
+  };
+
+  const getStatusIcon = (status: 'Present' | 'Absent' | 'Half Day', isActive: boolean) => {
+    if (!isActive) return null;
+    
+    switch (status) {
+      case 'Present':
+        return (
+          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'Absent':
+        return (
+          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'Half Day':
+        return (
+          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 12.293a1 1 0 101.414 1.414L10 12.414l1.293 1.293a1 1 0 001.414-1.414L11 10.586V7z" clipRule="evenodd" />
+          </svg>
+        );
+      default:
+        return null;
     }
   };
 
@@ -421,39 +452,57 @@ export default function AttendancePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {workers.map((worker) => (
-                    <tr key={worker.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                        {worker.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {worker.nic}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {worker.phone}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        Rs {Number(worker.daily_rate).toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex justify-center gap-2">
-                          {(['Present', 'Absent', 'Half Day'] as const).map((status) => (
-                            <button
-                              key={status}
-                              onClick={() => handleAttendanceChange(worker.id, status)}
-                              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-                                attendanceData.get(worker.id) === status
-                                  ? getStatusColor(status)
-                                  : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                              }`}
-                            >
-                              {status}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {workers.map((worker) => {
+                    const currentStatus = attendanceData.get(worker.id);
+                    const rowColor = currentStatus === 'Present' ? 'bg-green-900/20' : 
+                                   currentStatus === 'Absent' ? 'bg-red-900/20' : 
+                                   currentStatus === 'Half Day' ? 'bg-yellow-900/20' : '';
+                    
+                    return (
+                      <tr key={worker.id} className={`hover:bg-white/5 transition-colors ${rowColor}`}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                          <div className="flex items-center gap-2">
+                            {currentStatus && (
+                              <div className={`w-2 h-2 rounded-full ${
+                                currentStatus === 'Present' ? 'bg-green-400' :
+                                currentStatus === 'Absent' ? 'bg-red-400' :
+                                'bg-yellow-400'
+                              }`}></div>
+                            )}
+                            {worker.name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {worker.nic}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          {worker.phone}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                          Rs {Number(worker.daily_rate).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex justify-center gap-2">
+                            {(['Present', 'Absent', 'Half Day'] as const).map((status) => {
+                              const isActive = attendanceData.get(worker.id) === status;
+                              return (
+                                <button
+                                  key={status}
+                                  onClick={() => handleAttendanceChange(worker.id, status)}
+                                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 transform hover:scale-105 flex items-center ${
+                                    getStatusColor(status, isActive)
+                                  }`}
+                                >
+                                  {getStatusIcon(status, isActive)}
+                                  {status}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
