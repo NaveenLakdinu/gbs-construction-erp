@@ -150,7 +150,10 @@ export default function AttendancePage() {
           const existingRecord = data.find((record: AttendanceRecord) => 
             record.worker_id === worker.id
           );
-          updatedAttendance.set(worker.id, existingRecord ? existingRecord.status : 'Present');
+          // Only set status if there's a record, otherwise leave undefined (no pre-selection)
+          if (existingRecord) {
+            updatedAttendance.set(worker.id, existingRecord.status);
+          }
         });
         setAttendanceData(updatedAttendance);
       }
@@ -250,12 +253,12 @@ export default function AttendancePage() {
     }
   };
 
-  // Calculate attendance summary from fetched data
+  // Calculate attendance summary from current state (same as table)
   const attendanceSummary = {
     total: workers.length,
-    present: existingAttendance.filter(record => record.status === 'Present').length,
-    absent: existingAttendance.filter(record => record.status === 'Absent').length,
-    halfDay: existingAttendance.filter(record => record.status === 'Half Day').length,
+    present: Array.from(attendanceData.values()).filter(status => status === 'Present').length,
+    absent: Array.from(attendanceData.values()).filter(status => status === 'Absent').length,
+    halfDay: Array.from(attendanceData.values()).filter(status => status === 'Half Day').length,
   };
 
   return (
@@ -387,6 +390,18 @@ export default function AttendancePage() {
             {attendanceSummary.absent === 0 && attendanceSummary.halfDay === 0 ? (
               <div className="text-center py-6">
                 <div className="flex justify-center mb-3">
+                  <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 4a1 1 0 012 0v1a1 1 0 11-2 0V4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-400 font-medium text-lg">📝 Attendance not marked for this date yet</p>
+                <p className="text-gray-500 text-sm mt-1">Click status buttons below to mark attendance</p>
+              </div>
+            ) : attendanceSummary.absent === 0 && attendanceSummary.halfDay === 0 ? (
+              <div className="text-center py-6">
+                <div className="flex justify-center mb-3">
                   <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -399,7 +414,10 @@ export default function AttendancePage() {
             ) : (
               <div className="space-y-3">
                 {workers
-                  .filter(worker => attendanceData.get(worker.id) !== 'Present')
+                  .filter(worker => {
+                    const status = attendanceData.get(worker.id);
+                    return status && status !== 'Present';
+                  })
                   .map(worker => {
                     const status = attendanceData.get(worker.id);
                     const isAbsent = status === 'Absent';
@@ -528,15 +546,16 @@ export default function AttendancePage() {
                 <tbody className="divide-y divide-white/10">
                   {workers.map((worker) => {
                     const currentStatus = attendanceData.get(worker.id);
-                    const rowColor = currentStatus === 'Present' ? 'bg-green-900/20' : 
-                                   currentStatus === 'Absent' ? 'bg-red-900/20' : 
-                                   currentStatus === 'Half Day' ? 'bg-yellow-900/20' : '';
+                    const isUnmarked = currentStatus === undefined;
+                    const rowColor = !isUnmarked && currentStatus === 'Present' ? 'bg-green-900/20' : 
+                                   !isUnmarked && currentStatus === 'Absent' ? 'bg-red-900/20' : 
+                                   !isUnmarked && currentStatus === 'Half Day' ? 'bg-yellow-900/20' : '';
                     
                     return (
                       <tr key={worker.id} className={`hover:bg-white/5 transition-colors ${rowColor}`}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                           <div className="flex items-center gap-2">
-                            {currentStatus && (
+                            {!isUnmarked && currentStatus && (
                               <div className={`w-2 h-2 rounded-full ${
                                 currentStatus === 'Present' ? 'bg-green-400' :
                                 currentStatus === 'Absent' ? 'bg-red-400' :
@@ -558,20 +577,21 @@ export default function AttendancePage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex justify-center gap-2">
                             {(['Present', 'Absent', 'Half Day'] as const).map((status) => {
-                              const isActive = attendanceData.get(worker.id) === status;
-                              return (
-                                <button
-                                  key={status}
-                                  onClick={() => handleAttendanceChange(worker.id, status)}
-                                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 transform hover:scale-105 flex items-center ${
-                                    getStatusColor(status, isActive)
-                                  }`}
-                                >
-                                  {getStatusIcon(status, isActive)}
-                                  {status}
-                                </button>
-                              );
-                            })}
+                            const isActive = currentStatus === status;
+                            const isUnmarked = currentStatus === undefined;
+                            return (
+                              <button
+                                key={status}
+                                onClick={() => handleAttendanceChange(worker.id, status)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 transform hover:scale-105 flex items-center ${
+                                  isUnmarked ? 'bg-gray-700/50 hover:bg-gray-700/70 text-gray-400 border border-gray-600' : getStatusColor(status, isActive)
+                                }`}
+                              >
+                                {getStatusIcon(status, isActive && !isUnmarked)}
+                                {status}
+                              </button>
+                            );
+                          })}
                           </div>
                         </td>
                       </tr>
