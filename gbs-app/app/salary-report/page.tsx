@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import ThemeToggle from '@/components/ThemeToggle';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface WorkerSalaryData {
   worker_id: number;
@@ -85,6 +87,74 @@ export default function SalaryReportPage() {
     }).format(amount);
   };
 
+  const generatePDF = () => {
+    if (salaryData.length === 0) {
+      alert('No salary data available to export to PDF');
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Add title
+    const title = `Monthly Salary Report - ${months[parseInt(selectedMonth) - 1]} ${selectedYear}`;
+    doc.setFontSize(18);
+    doc.text(title, 14, 15);
+    
+    // Add generation date
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 25);
+    
+    // Prepare table data
+    const tableData = salaryData.map(worker => [
+      worker.worker_name,
+      `Rs ${worker.daily_rate.toFixed(2)}`,
+      worker.present_days.toString(),
+      worker.half_days.toString(),
+      formatCurrency(worker.total_salary)
+    ]);
+    
+    // Define table columns
+    const tableColumns = [
+      { header: 'Worker Name', dataKey: 'worker_name' },
+      { header: 'Daily Rate', dataKey: 'daily_rate' },
+      { header: 'Present Days', dataKey: 'present_days' },
+      { header: 'Half Days', dataKey: 'half_days' },
+      { header: 'Total Salary', dataKey: 'total_salary' }
+    ];
+    
+    // Add table
+    autoTable(doc, {
+      head: [tableColumns.map(col => col.header)],
+      body: tableData,
+      startY: 35,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      bodyStyles: {
+        textColor: 0,
+        halign: 'center'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      },
+      margin: { top: 35 }
+    });
+    
+    // Add total payout at bottom
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Payout: ${formatCurrency(totalPayout)}`, 14, finalY + 20);
+    
+    // Save the PDF
+    const fileName = `Salary_Report_${selectedMonth}_${selectedYear}.pdf`;
+    doc.save(fileName);
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
       <div className="max-w-7xl mx-auto">
@@ -138,7 +208,7 @@ export default function SalaryReportPage() {
             </div>
 
             {/* Generate Report Button */}
-            <div className="flex items-end">
+            <div className="flex items-end gap-3">
               <button
                 onClick={fetchSalaryReport}
                 disabled={loading}
@@ -152,6 +222,19 @@ export default function SalaryReportPage() {
                 ) : (
                   'Generate Salary Report'
                 )}
+              </button>
+              
+              <button
+                onClick={generatePDF}
+                disabled={salaryData.length === 0}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:opacity-50 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+              >
+                <div className="flex items-center justify-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download PDF
+                </div>
               </button>
             </div>
           </div>
