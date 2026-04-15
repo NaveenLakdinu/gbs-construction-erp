@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Banknote, Home, Users, Calendar, Building2 } from 'lucide-react';
+import { Banknote, Home, Users, Calendar, Building2, Receipt } from 'lucide-react';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -27,6 +27,11 @@ export default function Navigation() {
       href: '/workers',
       label: 'Workers',
       icon: <Users className="h-5 w-5" />,
+    },
+    {
+      href: '/expenses',
+      label: 'Expenses',
+      icon: <Receipt className="h-5 w-5" />,
     },
     {
       href: '/salary-report',
