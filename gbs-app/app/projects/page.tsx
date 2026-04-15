@@ -208,12 +208,9 @@ export default function ProjectsPage() {
                         <span className="text-xs text-gray-400 dark:text-gray-500">
                           {new Date(project.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </span>
-                        <Link
-                          href={`/projects/${project.id}`}
-                          className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
-                        >
+                        <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
                           View details ?
-                        </Link>
+                        </span>
                       </div>
                     </div>
                   </div>

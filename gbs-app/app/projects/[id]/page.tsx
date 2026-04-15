@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Wallet, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 
@@ -42,9 +42,9 @@ interface Attendance {
   created_at: string;
 }
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const projectId = params.id;
+  const { id: projectId } = use(params);
   
   const [project, setProject] = useState<Project | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -62,12 +62,17 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       setLoading(true);
       setError(null);
 
-      // Fetch project details
-      const projectResponse = await fetch(`/api/projects/${projectId}`);
-      if (!projectResponse.ok) {
-        throw new Error('Failed to fetch project details');
+      // Fetch all projects and find the specific one
+      const projectsResponse = await fetch('/api/projects');
+      if (!projectsResponse.ok) {
+        throw new Error('Failed to fetch projects');
       }
-      const projectData = await projectResponse.json();
+      const allProjects = await projectsResponse.json();
+      const projectData = allProjects.find((p: any) => p.id === parseInt(projectId));
+      
+      if (!projectData) {
+        throw new Error('Project not found');
+      }
       setProject(projectData);
 
       // Fetch project expenses

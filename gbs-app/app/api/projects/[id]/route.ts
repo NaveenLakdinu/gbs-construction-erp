@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const projectId = parseInt(params.id);
+    const { id } = await params;
+    const projectId = parseInt(id);
     
     if (isNaN(projectId)) {
       return NextResponse.json(
@@ -38,7 +37,5 @@ export async function GET(
       { error: 'Failed to fetch project', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
