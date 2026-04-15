@@ -22,12 +22,33 @@ interface Expense {
   created_at: string;
 }
 
+interface Worker {
+  id: number;
+  name: string;
+  nic: string;
+  phone: string;
+  daily_rate: number;
+  project_id: number;
+  created_at: string;
+}
+
+interface Attendance {
+  id: number;
+  date: string;
+  status: string;
+  worker_id: number;
+  project_id: number;
+  created_at: string;
+}
+
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const projectId = params.id;
   
   const [project, setProject] = useState<Project | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +77,22 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const expensesData = await expensesResponse.json();
       setExpenses(expensesData.data || []);
 
+      // Fetch workers for this project
+      const workersResponse = await fetch(`/api/workers?project_id=${projectId}`);
+      if (!workersResponse.ok) {
+        throw new Error('Failed to fetch workers');
+      }
+      const workersData = await workersResponse.json();
+      setWorkers(workersData || []);
+
+      // Fetch attendance for this project
+      const attendanceResponse = await fetch(`/api/attendance?project_id=${projectId}`);
+      if (!attendanceResponse.ok) {
+        throw new Error('Failed to fetch attendance');
+      }
+      const attendanceData = await attendanceResponse.json();
+      setAttendance(attendanceData || []);
+
     } catch (err) {
       console.error('Error fetching project data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load project data');
@@ -64,9 +101,46 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     }
   };
 
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  // Calculate total expenses
+  const totalExpensesAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  
+  // Calculate total salary costs from attendance
+  const calculateTotalSalaryCost = () => {
+    let totalSalary = 0;
+    
+    attendance.forEach((attendanceRecord) => {
+      // Find the worker for this attendance record
+      const worker = workers.find(w => w.id === attendanceRecord.worker_id);
+      if (worker) {
+        let daysWorked = 0;
+        
+        // Calculate days worked based on attendance status
+        switch (attendanceRecord.status) {
+          case 'Present':
+            daysWorked = 1;
+            break;
+          case 'Half Day':
+            daysWorked = 0.5;
+            break;
+          case 'Absent':
+            daysWorked = 0;
+            break;
+          default:
+            daysWorked = 0;
+        }
+        
+        // Add to total salary
+        totalSalary += worker.daily_rate * daysWorked;
+      }
+    });
+    
+    return totalSalary;
+  };
+  
+  const totalSalaryCost = calculateTotalSalaryCost();
+  const totalSpent = totalExpensesAmount + totalSalaryCost;
   const totalBudget = 1000000; // Default budget - you can make this dynamic
-  const remainingBalance = totalBudget - totalExpenses;
+  const remainingBalance = totalBudget - totalSpent;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-LK', {
@@ -200,7 +274,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400 text-sm mb-1">Total Spent</p>
-                <p className="text-2xl font-bold text-orange-400">{formatCurrency(totalExpenses)}</p>
+                <p className="text-2xl font-bold text-orange-400">{formatCurrency(totalSpent)}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Expenses: {formatCurrency(totalExpensesAmount)} + Salaries: {formatCurrency(totalSalaryCost)}
+                </p>
               </div>
               <div className="w-12 h-12 bg-orange-600/20 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

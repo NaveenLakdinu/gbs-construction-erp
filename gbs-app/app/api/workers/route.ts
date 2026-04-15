@@ -1,19 +1,43 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const workers = await prisma.workers.findMany({
-      include: {
-        projects: {
-          select: {
-            id: true,
-            name: true
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('project_id');
+    
+    let workers;
+    
+    if (projectId) {
+      // Fetch workers for specific project
+      workers = await prisma.workers.findMany({
+        where: {
+          project_id: parseInt(projectId)
+        },
+        include: {
+          projects: {
+            select: {
+              id: true,
+              name: true
+            }
           }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    });
+        },
+        orderBy: { id: 'desc' }
+      });
+    } else {
+      // Fetch all workers
+      workers = await prisma.workers.findMany({
+        include: {
+          projects: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: { id: 'desc' }
+      });
+    }
     
     return NextResponse.json(workers);
   } catch (error) {

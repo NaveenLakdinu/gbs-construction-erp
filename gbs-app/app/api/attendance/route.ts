@@ -7,10 +7,10 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('project_id');
     const date = searchParams.get('date');
 
-    // Validate required parameters
-    if (!projectId || !date) {
+    // Validate project_id is required
+    if (!projectId) {
       return NextResponse.json(
-        { error: 'project_id and date query parameters are required' },
+        { error: 'project_id query parameter is required' },
         { status: 400 }
       );
     }
@@ -24,30 +24,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate date format
-    const attendanceDate = new Date(date);
-    if (isNaN(attendanceDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid date format. Use ISO format (e.g., 2024-04-13)' },
-        { status: 400 }
-      );
-    }
+    let attendanceRecords;
 
-    // Get attendance records for specific project and date with worker details
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: {
-        project_id: projectIdNum,
-        date: {
-          gte: new Date(attendanceDate.toISOString().split('T')[0] + 'T00:00:00.000Z'),
-          lt: new Date(attendanceDate.toISOString().split('T')[0] + 'T23:59:59.999Z')
-        }
-      },
-      include: {
-        workers: {
-          select: {
-            id: true,
-            name: true,
-            nic: true,
+    if (date) {
+      // Validate date format
+      const attendanceDate = new Date(date);
+      if (isNaN(attendanceDate.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid date format. Use ISO format (e.g., 2024-04-13)' },
+          { status: 400 }
+        );
+      }
+
+      // Get attendance records for specific project and date with worker details
+      attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          project_id: projectIdNum,
+          date: {
+            gte: new Date(attendanceDate.toISOString().split('T')[0] + 'T00:00:00.000Z'),
+            lt: new Date(attendanceDate.toISOString().split('T')[0] + 'T23:59:59.999Z')
+          }
+        },
+        include: {
+          workers: {
+            select: {
+              id: true,
+              name: true,
+              nic: true,
             phone: true,
             daily_rate: true
           }
@@ -65,6 +68,34 @@ export async function GET(request: NextRequest) {
         }
       }
     });
+    } else {
+      // Get all attendance records for the project
+      attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          project_id: projectIdNum
+        },
+        include: {
+          workers: {
+            select: {
+              id: true,
+              name: true,
+              nic: true,
+            phone: true,
+            daily_rate: true
+          }
+          },
+          projects: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: {
+          date: 'desc'
+        }
+      });
+    }
 
     return NextResponse.json(attendanceRecords);
     
