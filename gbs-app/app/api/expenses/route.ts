@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Define valid expense categories
-const VALID_CATEGORIES = ['Material', 'Labor', 'Transport', 'Food', 'Other'];
+const VALID_CATEGORIES = ['Materials', 'Labor', 'Transport', 'Food', 'Others'];
 
 export async function GET(request: NextRequest) {
   try {

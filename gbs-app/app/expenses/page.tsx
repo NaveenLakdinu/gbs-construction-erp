@@ -11,7 +11,7 @@ interface Expense {
   date: string;
   project_id: number;
   created_at: string;
-  projects: {
+  projects?: {
     id: number;
     name: string;
     location: string | null;
@@ -26,7 +26,7 @@ interface Project {
   created_at: string;
 }
 
-const EXPENSE_CATEGORIES = ['Material', 'Labor', 'Transport', 'Food', 'Other'];
+const EXPENSE_CATEGORIES = ['Materials', 'Labor', 'Transport', 'Food', 'Others'];
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -39,7 +39,7 @@ export default function ExpensesPage() {
   const [formData, setFormData] = useState({
     item_name: '',
     amount: '',
-    category: 'Material',
+    category: 'Materials',
     date: new Date().toISOString().split('T')[0],
     project_id: ''
   });
@@ -77,12 +77,23 @@ export default function ExpensesPage() {
   const fetchExpenses = async (projectId: number) => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`/api/expenses?project_id=${projectId}`);
-      if (!response.ok) throw new Error('Failed to fetch expenses');
+      if (!response.ok) {
+        if (response.status === 500) {
+          // Try to get error details
+          const errorText = await response.text();
+          console.error('Expenses API error:', errorText);
+          throw new Error('Server error while fetching expenses. Please check the server logs.');
+        }
+        throw new Error(`Failed to fetch expenses: ${response.status}`);
+      }
       const data = await response.json();
       setExpenses(data.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Expenses fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch expenses');
+      setExpenses([]);
     } finally {
       setLoading(false);
     }
@@ -98,6 +109,8 @@ export default function ExpensesPage() {
 
     try {
       setFormLoading(true);
+      setMessage(null);
+      
       const response = await fetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -109,8 +122,8 @@ export default function ExpensesPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create expense');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to create expense: ${response.status}`);
       }
 
       const result = await response.json();
@@ -120,7 +133,7 @@ export default function ExpensesPage() {
       setFormData({
         item_name: '',
         amount: '',
-        category: 'Material',
+        category: 'Materials',
         date: new Date().toISOString().split('T')[0],
         project_id: selectedProject?.toString() || ''
       });
@@ -131,10 +144,11 @@ export default function ExpensesPage() {
       }
 
     } catch (err) {
+      console.error('Expense creation error:', err);
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to create expense' });
     } finally {
       setFormLoading(false);
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 5000);
     }
   };
 
@@ -142,11 +156,15 @@ export default function ExpensesPage() {
     if (!confirm('Are you sure you want to delete this expense?')) return;
 
     try {
+      setMessage(null);
       const response = await fetch(`/api/expenses?id=${expenseId}`, {
         method: 'DELETE'
       });
 
-      if (!response.ok) throw new Error('Failed to delete expense');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to delete expense: ${response.status}`);
+      }
 
       setMessage({ type: 'success', text: 'Expense deleted successfully!' });
       
@@ -156,9 +174,10 @@ export default function ExpensesPage() {
       }
 
     } catch (err) {
+      console.error('Expense deletion error:', err);
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete expense' });
     } finally {
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 5000);
     }
   };
 
