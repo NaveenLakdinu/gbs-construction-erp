@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: body.name,
         location: body.location || null,
-        budget: body.budget || 0,
+        budget: parseFloat(body.budget) || 0,
         status: "Ongoing"
       },
     });

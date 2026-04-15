@@ -108,7 +108,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   };
 
   // Calculate total expenses
-  const totalExpensesAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalExpensesAmount = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
   
   // Calculate total salary costs from attendance
   const calculateTotalSalaryCost = () => {
@@ -136,7 +136,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         }
         
         // Add to total salary
-        totalSalary += worker.daily_rate * daysWorked;
+        totalSalary += Number(worker.daily_rate) * daysWorked;
       }
     });
     
@@ -144,7 +144,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   };
   
   const totalSalaryCost = calculateTotalSalaryCost();
-  const totalSpent = totalExpensesAmount + totalSalaryCost;
+  const validatedExpensesAmount = isNaN(totalExpensesAmount) ? 0 : totalExpensesAmount;
+  const validatedSalaryCost = isNaN(totalSalaryCost) ? 0 : totalSalaryCost;
+  const totalSpent = validatedExpensesAmount + validatedSalaryCost;
   const totalBudget = project?.budget ? parseFloat(project.budget.toString()) : 0;
   const remainingBalance = totalBudget - totalSpent;
   
