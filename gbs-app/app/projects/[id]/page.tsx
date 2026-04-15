@@ -145,12 +145,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   
   const totalSalaryCost = calculateTotalSalaryCost();
   const totalSpent = totalExpensesAmount + totalSalaryCost;
-  const totalBudget = 1000000; // Default budget - you can make this dynamic
+  const totalBudget = project?.budget ? parseFloat(project.budget.toString()) : 0;
   const remainingBalance = totalBudget - totalSpent;
   
   // Calculate budget usage percentage
-  const budgetUsagePercentage = Math.min((totalSpent / totalBudget) * 100, 100);
-  const isOverBudget = totalSpent > totalBudget;
+  const budgetUsagePercentage = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
+  const isOverBudget = totalBudget > 0 && totalSpent > totalBudget;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-LK', {

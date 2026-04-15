@@ -8,6 +8,7 @@ export default function AddProjectPage() {
   // Form data
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
+  const [budget, setBudget] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
@@ -28,13 +29,14 @@ export default function AddProjectPage() {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, location }),
+        body: JSON.stringify({ name, location, budget: budget ? parseFloat(budget) : 0 }),
       });
 
       if (res.ok) {
         setMessage("Project successfully saved!");
         setName("");
         setLocation("");
+        setBudget("");
         
         // Redirect to projects page after 2 seconds
         setTimeout(() => {
@@ -103,6 +105,18 @@ export default function AddProjectPage() {
               onChange={(e) => setLocation(e.target.value)}
               className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter project location"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">Project Budget:</label>
+            <input
+              type="number"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter project budget (LKR)"
+              min="0"
+              step="0.01"
             />
           </div>
           
