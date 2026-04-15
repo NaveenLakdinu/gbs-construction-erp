@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import ThemeToggle from '@/components/ThemeToggle';
+import { Wallet, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 
 interface Project {
   id: number;
@@ -141,6 +142,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const totalSpent = totalExpensesAmount + totalSalaryCost;
   const totalBudget = 1000000; // Default budget - you can make this dynamic
   const remainingBalance = totalBudget - totalSpent;
+  
+  // Calculate budget usage percentage
+  const budgetUsagePercentage = Math.min((totalSpent / totalBudget) * 100, 100);
+  const isOverBudget = totalSpent > totalBudget;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-LK', {
@@ -263,9 +268,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 <p className="text-2xl font-bold text-white">{formatCurrency(totalBudget)}</p>
               </div>
               <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <Wallet className="w-6 h-6 text-blue-400" />
               </div>
             </div>
           </div>
@@ -280,9 +283,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 </p>
               </div>
               <div className="w-12 h-12 bg-orange-600/20 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+                <DollarSign className="w-6 h-6 text-orange-400" />
               </div>
             </div>
           </div>
@@ -295,11 +296,65 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                   {formatCurrency(remainingBalance)}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
+              <div className={`w-12 h-12 ${remainingBalance >= 0 ? 'bg-green-600/20' : 'bg-red-600/20'} rounded-lg flex items-center justify-center`}>
+                {remainingBalance >= 0 ? (
+                  <TrendingUp className="w-6 h-6 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-6 h-6 text-red-400" />
+                )}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Budget Progress Bar */}
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-white">Budget Usage</h3>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-medium ${isOverBudget ? 'text-red-400' : 'text-gray-400'}`}>
+                {budgetUsagePercentage.toFixed(1)}% Used
+              </span>
+              {isOverBudget && (
+                <AlertCircle className="w-4 h-4 text-red-400" />
+              )}
+            </div>
+          </div>
+          
+          <div className="relative">
+            <div className="w-full bg-slate-700 rounded-full h-4 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ease-out ${
+                  isOverBudget 
+                    ? 'bg-red-500' 
+                    : budgetUsagePercentage > 80 
+                      ? 'bg-yellow-500' 
+                      : 'bg-green-500'
+                }`}
+                style={{ width: `${budgetUsagePercentage}%` }}
+              />
+            </div>
+            
+            {/* Progress markers */}
+            <div className="flex justify-between mt-2">
+              <span className="text-xs text-gray-400">0%</span>
+              <span className="text-xs text-gray-400">25%</span>
+              <span className="text-xs text-gray-400">50%</span>
+              <span className="text-xs text-gray-400">75%</span>
+              <span className="text-xs text-gray-400">100%</span>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex justify-between text-sm">
+            <div>
+              <p className="text-gray-400">Budget</p>
+              <p className="text-white font-medium">{formatCurrency(totalBudget)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-gray-400">Spent</p>
+              <p className={`font-medium ${isOverBudget ? 'text-red-400' : 'text-white'}`}>
+                {formatCurrency(totalSpent)}
+              </p>
             </div>
           </div>
         </div>
