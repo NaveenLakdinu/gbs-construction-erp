@@ -181,7 +181,8 @@ export default function ExpensesPage() {
     }
   };
 
-  const totalExpense = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalExpense = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
+const validatedTotalExpense = isNaN(totalExpense) ? 0 : totalExpense;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-LK', {
@@ -259,7 +260,7 @@ export default function ExpensesPage() {
                   <p className="text-gray-400">For selected project</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold text-blue-400">{formatCurrency(totalExpense)}</p>
+                  <p className="text-3xl font-bold text-blue-400">{formatCurrency(validatedTotalExpense)}</p>
                   <p className="text-sm text-gray-400">{expenses.length} expenses</p>
                 </div>
               </div>
@@ -292,7 +293,7 @@ export default function ExpensesPage() {
                       type="number"
                       step="0.01"
                       value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value).toString() || '0' })}
                       className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="15000.00"
                       required
