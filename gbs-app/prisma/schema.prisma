@@ -17,6 +17,7 @@ model projects {
   workers    workers[]
   attendance attendance[]
   expenses   expenses[]
+  workerTransactions workerTransaction[]
 }
 
 model workers {
@@ -29,12 +30,15 @@ model workers {
   created_at DateTime  @default(now()) @db.Timestamp(6)
   projects   projects  @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   attendance attendance[]
+  workerTransactions workerTransaction[]
 }
 
 model attendance {
   id         Int       @id @default(autoincrement())
   date       DateTime  @default(now()) @db.Timestamp(6)
   status     String    @db.VarChar(20) @default("Present")
+  workType   String    @default("Full") @db.VarChar(20)
+  note       String?   @db.VarChar(500)
   worker_id  Int
   project_id Int
   created_at DateTime  @default(now()) @db.Timestamp(6)
@@ -58,4 +62,19 @@ model expenses {
   
   // Relationships
   projects   projects  @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model workerTransaction {
+  id         Int       @id @default(autoincrement())
+  workerId   Int
+  projectId  Int?
+  amount     Decimal   @db.Decimal(10, 2)
+  type       String    @db.VarChar(20) // 'Advance', 'Deduction', 'Bonus'
+  date       DateTime  @default(now()) @db.Timestamp(6)
+  note       String?   @db.VarChar(500)
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  
+  // Relationships
+  workers    workers   @relation(fields: [workerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects   projects? @relation(fields: [projectId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 }
