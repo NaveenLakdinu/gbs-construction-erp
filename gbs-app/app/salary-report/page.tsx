@@ -40,6 +40,15 @@ export default function SalaryReportPage() {
   const [salaryData, setSalaryData] = useState<WorkerSalaryData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Worker Ledger states
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [selectedWorker, setSelectedWorker] = useState<string>('');
+  const [transactionType, setTransactionType] = useState<string>('Advance');
+  const [transactionAmount, setTransactionAmount] = useState<string>('');
+  const [transactionNote, setTransactionNote] = useState<string>('');
+  const [addingTransaction, setAddingTransaction] = useState(false);
+  const [workerBalances, setWorkerBalances] = useState<any[]>([]);
 
   // Generate month options
   const months = [
@@ -86,6 +95,84 @@ export default function SalaryReportPage() {
       minimumFractionDigits: 2,
     }).format(amount);
   };
+
+  // Worker Ledger functions
+  const fetchWorkers = async () => {
+    try {
+      const response = await fetch('/api/workers');
+      if (response.ok) {
+        const data = await response.json();
+        setWorkers(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch workers:', error);
+    }
+  };
+
+  const fetchWorkerBalances = async () => {
+    try {
+      const promises = workers.map(async (worker) => {
+        const response = await fetch(`/api/workers/balance?worker_id=${worker.id}`);
+        if (response.ok) {
+          return await response.json();
+        }
+        return null;
+      });
+
+      const results = await Promise.all(promises);
+      const validResults = results.filter(result => result !== null);
+      setWorkerBalances(validResults);
+    } catch (error) {
+      console.error('Failed to fetch worker balances:', error);
+    }
+  };
+
+  const handleAddTransaction = async () => {
+    if (!selectedWorker || !transactionType || !transactionAmount) {
+      return;
+    }
+
+    setAddingTransaction(true);
+    try {
+      const response = await fetch('/api/worker-transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workerId: parseInt(selectedWorker),
+          type: transactionType,
+          amount: parseFloat(transactionAmount),
+          note: transactionNote
+        }),
+      });
+
+      if (response.ok) {
+        // Reset form
+        setSelectedWorker('');
+        setTransactionType('Advance');
+        setTransactionAmount('');
+        setTransactionNote('');
+        
+        // Refresh balances
+        await fetchWorkerBalances();
+      }
+    } catch (error) {
+      console.error('Failed to add transaction:', error);
+    } finally {
+      setAddingTransaction(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWorkers();
+  }, []);
+
+  useEffect(() => {
+    if (workers.length > 0) {
+      fetchWorkerBalances();
+    }
+  }, [workers]);
 
   const generatePDF = () => {
     if (salaryData.length === 0) {
@@ -358,6 +445,169 @@ export default function SalaryReportPage() {
             </div>
           </div>
         )}
+
+        {/* Worker Ledger Section */}
+        <div className="mt-12">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div className="bg-blue-600 dark:bg-blue-700 px-6 py-4">
+              <h2 className="text-2xl font-bold text-white">Worker Ledger</h2>
+              <p className="text-blue-100 mt-1">Manage worker advances, deductions, and bonuses</p>
+            </div>
+            
+            <div className="p-6">
+              {/* Add Transaction Form */}
+              <div className="mb-8 bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Add Transaction</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Worker
+                    </label>
+                    <select
+                      value={selectedWorker}
+                      onChange={(e) => setSelectedWorker(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Worker</option>
+                      {workers.map((worker) => (
+                        <option key={worker.id} value={worker.id}>
+                          {worker.name} - {worker.nic}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Transaction Type
+                    </label>
+                    <select
+                      value={transactionType}
+                      onChange={(e) => setTransactionType(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Advance">Advance</option>
+                      <option value="Deduction">Deduction</option>
+                      <option value="Bonus">Bonus</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Amount (LKR)
+                    </label>
+                    <input
+                      type="number"
+                      value={transactionAmount}
+                      onChange={(e) => setTransactionAmount(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Note
+                    </label>
+                    <input
+                      type="text"
+                      value={transactionNote}
+                      onChange={(e) => setTransactionNote(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Transaction note..."
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={handleAddTransaction}
+                    disabled={!selectedWorker || !transactionType || !transactionAmount || addingTransaction}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md transition-colors"
+                  >
+                    {addingTransaction ? 'Adding...' : 'Add Transaction'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Worker Balances */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Worker Balances</h3>
+                {workerBalances.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p className="text-gray-500 dark:text-gray-400">No worker data available</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Worker
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Total Earned
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Advances
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Deductions
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Bonuses
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Balance
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {workerBalances.map((balance) => (
+                          <tr key={balance.worker.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {balance.worker.name}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {balance.worker.nic}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {formatCurrency(balance.earnings.totalEarned)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">
+                              {formatCurrency(balance.earnings.totalAdvances)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">
+                              {formatCurrency(balance.earnings.totalDeductions)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400">
+                              {formatCurrency(balance.earnings.totalBonuses)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`text-sm font-medium ${
+                                balance.earnings.finalBalance >= 0 
+                                  ? 'text-green-600 dark:text-green-400' 
+                                  : 'text-red-600 dark:text-red-400'
+                              }`}>
+                                {formatCurrency(balance.earnings.finalBalance)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
