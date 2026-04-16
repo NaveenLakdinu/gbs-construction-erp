@@ -138,7 +138,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // Calculate totals
+  // Calculate totals with proper number conversion
   const totalExpensesAmount = expenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
   
   const calculateTotalSalaryCost = () => {
@@ -161,6 +161,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             daysWorked = 0;
         }
         
+        // Ensure daily_rate is converted to number
         totalSalary += Number(worker.daily_rate) * daysWorked;
       }
     });
@@ -179,9 +180,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     .filter(t => t.type === 'Bonus')
     .reduce((sum, t) => sum + Number(t.amount), 0);
   
+  // Ensure all amounts are properly converted to numbers
   const validatedExpensesAmount = isNaN(totalExpensesAmount) ? 0 : totalExpensesAmount;
   const validatedSalaryCost = isNaN(totalSalaryCost) ? 0 : totalSalaryCost;
-  const totalSpent = validatedExpensesAmount + validatedSalaryCost + totalAdvances - totalDeductions + totalBonuses;
+  const validatedAdvances = isNaN(totalAdvances) ? 0 : totalAdvances;
+  const validatedDeductions = isNaN(totalDeductions) ? 0 : totalDeductions;
+  const validatedBonuses = isNaN(totalBonuses) ? 0 : totalBonuses;
+  
+  // Fix totalSpent calculation - should be expenses + salary cost
+  const totalSpent = validatedExpensesAmount + validatedSalaryCost;
+  
   const totalBudget = project?.budget ? parseFloat(project.budget.toString()) : 0;
   const remainingBalance = totalBudget - totalSpent;
   
