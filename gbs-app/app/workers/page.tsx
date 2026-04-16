@@ -14,9 +14,9 @@ interface Worker {
   nic: string;
   phone: string;
   daily_rate: number;
-  project_id: number;
+  project_id?: number;
   created_at: string;
-  projects: {
+  projects?: {
     id: number;
     name: string;
   };
@@ -34,8 +34,7 @@ export default function WorkersPage() {
     name: '',
     nic: '',
     phone: '',
-    daily_rate: '',
-    project_id: ''
+    daily_rate: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -85,7 +84,7 @@ export default function WorkersPage() {
     
     // Basic validation
     if (!formData.name.trim() || !formData.nic.trim() || !formData.phone.trim() || 
-        !formData.daily_rate.trim() || !formData.project_id.trim()) {
+        !formData.daily_rate.trim()) {
       setMessage('All fields are required');
       return;
     }
@@ -102,8 +101,7 @@ export default function WorkersPage() {
         },
         body: JSON.stringify({
           ...formData,
-          daily_rate: parseFloat(formData.daily_rate),
-          project_id: parseInt(formData.project_id)
+          daily_rate: parseFloat(formData.daily_rate)
         }),
       });
 
@@ -113,8 +111,7 @@ export default function WorkersPage() {
           name: '',
           nic: '',
           phone: '',
-          daily_rate: '',
-          project_id: ''
+          daily_rate: ''
         });
         fetchWorkers(); // Refresh workers list
       } else {
@@ -146,8 +143,8 @@ export default function WorkersPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Workers Management</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Register and manage construction workers</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Central Worker Database</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage all construction workers in one place</p>
           </div>
           <ThemeToggle />
         </div>
@@ -234,26 +231,6 @@ export default function WorkersPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Project *
-                  </label>
-                  <select
-                    name="project_id"
-                    value={formData.project_id}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select a project</option>
-                    {projects.map(project => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <button
                   type="submit"
                   disabled={submitting}
@@ -295,9 +272,6 @@ export default function WorkersPage() {
                           Daily Rate
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Project
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Status
                         </th>
                       </tr>
@@ -316,9 +290,6 @@ export default function WorkersPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             Rs {typeof worker.daily_rate === 'number' ? worker.daily_rate.toFixed(2) : Number(worker.daily_rate).toFixed(2)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {worker.projects.name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">

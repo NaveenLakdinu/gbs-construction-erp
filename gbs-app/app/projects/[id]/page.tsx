@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, use } from 'react';
 import ThemeToggle from '@/components/ThemeToggle';
+import WorkerSearchSelect from '@/components/WorkerSearchSelect';
+import AddWorkerModal from '@/components/AddWorkerModal';
 import { Wallet, DollarSign, TrendingUp, AlertCircle, Calendar, Receipt, Users, X } from 'lucide-react';
 
 interface Project {
@@ -73,6 +75,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // Form states
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+  const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
     item_name: '',
     amount: '',
@@ -105,7 +109,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       // Fetch all data in parallel
       const [expensesResponse, workersResponse, attendanceResponse, transactionsResponse] = await Promise.all([
         fetch(`/api/expenses?project_id=${projectId}`),
-        fetch(`/api/workers?project_id=${projectId}`),
+        fetch(`/api/workers`), // Fetch all workers from central table
         fetch(`/api/attendance?project_id=${projectId}`),
         fetch(`/api/worker-transactions?project_id=${projectId}`)
       ]);
@@ -271,7 +275,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       if (response.ok) {
         // Reset form
         setAttendanceDate(new Date().toISOString().split('T')[0]);
-        (e.currentTarget as HTMLFormElement).reset();
+        setSelectedWorker(null);
+        const form = e.target as HTMLFormElement;
+        if (form) {
+          form.reset();
+        }
         
         // Refresh attendance data
         const attendanceResponse = await fetch(`/api/attendance?project_id=${projectId}`);
@@ -324,6 +332,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
     } catch (error) {
       console.error('Failed to add expense:', error);
+    }
+  };
+
+  const handleWorkerAdded = async (newWorker: Worker) => {
+    // Refresh workers list
+    try {
+      const workersResponse = await fetch('/api/workers');
+      if (workersResponse.ok) {
+        const workersData = await workersResponse.json();
+        setWorkers(workersData || []);
+      }
+    } catch (error) {
+      console.error('Failed to refresh workers:', error);
     }
   };
 
@@ -740,18 +761,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Worker</label>
-                    <select
+                    <WorkerSearchSelect
+                      workers={workers}
+                      selectedWorker={selectedWorker}
+                      onWorkerSelect={setSelectedWorker}
+                      onAddNewWorker={() => setIsWorkerModalOpen(true)}
+                    />
+                    <input
+                      type="hidden"
                       name="worker_id"
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={selectedWorker?.id || ''}
                       required
-                    >
-                      <option value="">Select Worker</option>
-                      {workers.map((worker) => (
-                        <option key={worker.id} value={worker.id}>
-                          {worker.name} - {worker.nic}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
@@ -988,5 +1009,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
     </div>
+
+    {/* Add Worker Modal */}
+    <AddWorkerModal
+      isOpen={isWorkerModalOpen}
+      onClose={() => setIsWorkerModalOpen(false)}
+      onWorkerAdded={handleWorkerAdded}
+    />
   );
 }

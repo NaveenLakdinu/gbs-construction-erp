@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.name || !body.nic || !body.phone || !body.daily_rate || !body.project_id) {
+    if (!body.name || !body.nic || !body.phone || !body.daily_rate) {
       return NextResponse.json(
-        { error: 'All fields are required: name, nic, phone, daily_rate, project_id' },
+        { error: 'All fields are required: name, nic, phone, daily_rate' },
         { status: 400 }
       );
     }
@@ -86,25 +86,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate project_id is a positive integer
-    const projectId = parseInt(body.project_id);
-    if (isNaN(projectId) || projectId <= 0) {
-      return NextResponse.json(
-        { error: 'Project ID must be a positive number' },
-        { status: 400 }
-      );
-    }
+    // Validate project_id if provided
+    let projectId = null;
+    if (body.project_id) {
+      projectId = parseInt(body.project_id);
+      if (isNaN(projectId) || projectId <= 0) {
+        return NextResponse.json(
+          { error: 'Project ID must be a positive number' },
+          { status: 400 }
+        );
+      }
 
-    // Check if project exists
-    const project = await prisma.projects.findUnique({
-      where: { id: projectId }
-    });
+      // Check if project exists
+      const project = await prisma.projects.findUnique({
+        where: { id: projectId }
+      });
 
-    if (!project) {
-      return NextResponse.json(
-        { error: 'Project not found' },
-        { status: 404 }
-      );
+      if (!project) {
+        return NextResponse.json(
+          { error: 'Project not found' },
+          { status: 404 }
+        );
+      }
     }
 
     // Check if NIC already exists
