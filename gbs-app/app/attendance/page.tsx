@@ -23,6 +23,8 @@ interface AttendanceRecord {
   project_id: number;
   date: string;
   status: 'Present' | 'Absent' | 'Half Day';
+  workType: 'Full' | 'Half';
+  note: string | null;
   workers: Worker;
 }
 
@@ -33,7 +35,7 @@ export default function AttendancePage() {
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
-  const [attendanceData, setAttendanceData] = useState<Map<number, 'Present' | 'Absent' | 'Half Day'>>(new Map());
+  const [attendanceData, setAttendanceData] = useState<Map<number, { status: 'Present' | 'Absent' | 'Half Day'; workType: 'Full' | 'Half'; note: string }>>(new Map());
   const [existingAttendance, setExistingAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -90,9 +92,9 @@ export default function AttendancePage() {
         setWorkers(projectWorkers);
         
         // Initialize attendance data for all workers
-        const initialAttendance = new Map<number, 'Present' | 'Absent' | 'Half Day'>();
+        const initialAttendance = new Map<number, { status: 'Present' | 'Absent' | 'Half Day'; workType: 'Full' | 'Half'; note: string }>();
         projectWorkers.forEach((worker: Worker) => {
-          initialAttendance.set(worker.id, 'Present');
+          initialAttendance.set(worker.id, { status: 'Present', workType: 'Full', note: '' });
         });
         setAttendanceData(initialAttendance);
       }
@@ -114,12 +116,16 @@ export default function AttendancePage() {
         setExistingAttendance(data);
         
         // Update attendance data with existing records
-        const updatedAttendance = new Map<number, 'Present' | 'Absent' | 'Half Day'>();
+        const updatedAttendance = new Map<number, { status: 'Present' | 'Absent' | 'Half Day'; workType: 'Full' | 'Half'; note: string }>();
         workers.forEach((worker: Worker) => {
           const existingRecord = data.find((record: AttendanceRecord) => 
             record.worker_id === worker.id
           );
-          updatedAttendance.set(worker.id, existingRecord ? existingRecord.status : 'Present');
+          updatedAttendance.set(worker.id, existingRecord ? { 
+          status: existingRecord.status, 
+          workType: existingRecord.workType, 
+          note: existingRecord.note || '' 
+        } : { status: 'Present', workType: 'Full', note: '' });
         });
         setAttendanceData(updatedAttendance);
       }
@@ -145,14 +151,18 @@ export default function AttendancePage() {
         setExistingAttendance(data);
         
         // Update attendance data with existing records
-        const updatedAttendance = new Map<number, 'Present' | 'Absent' | 'Half Day'>();
+        const updatedAttendance = new Map<number, { status: 'Present' | 'Absent' | 'Half Day'; workType: 'Full' | 'Half'; note: string }>();
         workers.forEach((worker: Worker) => {
           const existingRecord = data.find((record: AttendanceRecord) => 
             record.worker_id === worker.id
           );
           // Only set status if there's a record, otherwise leave undefined (no pre-selection)
           if (existingRecord) {
-            updatedAttendance.set(worker.id, existingRecord.status);
+            updatedAttendance.set(worker.id, { 
+              status: existingRecord.status, 
+              workType: existingRecord.workType, 
+              note: existingRecord.note || '' 
+            });
           }
         });
         setAttendanceData(updatedAttendance);
@@ -165,9 +175,10 @@ export default function AttendancePage() {
     }
   };
 
-  const handleAttendanceChange = (workerId: number, status: 'Present' | 'Absent' | 'Half Day') => {
+  const handleAttendanceChange = (workerId: number, field: 'status' | 'workType' | 'note', value: string) => {
     const newAttendanceData = new Map(attendanceData);
-    newAttendanceData.set(workerId, status);
+    const currentData = newAttendanceData.get(workerId) || { status: 'Present', workType: 'Full', note: '' };
+    newAttendanceData.set(workerId, { ...currentData, [field]: value });
     setAttendanceData(newAttendanceData);
   };
 
@@ -181,7 +192,7 @@ export default function AttendancePage() {
     setMessage(null);
 
     try {
-      const promises = Array.from(attendanceData.entries()).map(([workerId, status]) =>
+      const promises = Array.from(attendanceData.entries()).map(([workerId, attendanceInfo]) =>
         fetch('/api/attendance', {
           method: 'POST',
           headers: {
@@ -191,7 +202,9 @@ export default function AttendancePage() {
             worker_id: workerId,
             project_id: parseInt(selectedProject),
             date: selectedDate,
-            status: status,
+            status: attendanceInfo.status,
+            workType: attendanceInfo.workType,
+            note: attendanceInfo.note,
           }),
         })
       );
@@ -541,24 +554,30 @@ export default function AttendancePage() {
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Attendance Status
                     </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Work Type
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Note
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
                   {workers.map((worker) => {
-                    const currentStatus = attendanceData.get(worker.id);
-                    const isUnmarked = currentStatus === undefined;
-                    const rowColor = !isUnmarked && currentStatus === 'Present' ? 'bg-green-900/20' : 
-                                   !isUnmarked && currentStatus === 'Absent' ? 'bg-red-900/20' : 
-                                   !isUnmarked && currentStatus === 'Half Day' ? 'bg-yellow-900/20' : '';
+                    const currentAttendance = attendanceData.get(worker.id);
+                    const isUnmarked = currentAttendance === undefined;
+                    const rowColor = !isUnmarked && currentAttendance?.status === 'Present' ? 'bg-green-900/20' : 
+                                   !isUnmarked && currentAttendance?.status === 'Absent' ? 'bg-red-900/20' : 
+                                   !isUnmarked && currentAttendance?.status === 'Half Day' ? 'bg-yellow-900/20' : '';
                     
                     return (
                       <tr key={worker.id} className={`hover:bg-white/5 transition-colors ${rowColor}`}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                           <div className="flex items-center gap-2">
-                            {!isUnmarked && currentStatus && (
+                            {!isUnmarked && currentAttendance && (
                               <div className={`w-2 h-2 rounded-full ${
-                                currentStatus === 'Present' ? 'bg-green-400' :
-                                currentStatus === 'Absent' ? 'bg-red-400' :
+                                currentAttendance.status === 'Present' ? 'bg-green-400' :
+                                currentAttendance.status === 'Absent' ? 'bg-red-400' :
                                 'bg-yellow-400'
                               }`}></div>
                             )}
@@ -577,12 +596,12 @@ export default function AttendancePage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex justify-center gap-2">
                             {(['Present', 'Absent', 'Half Day'] as const).map((status) => {
-                            const isActive = currentStatus === status;
-                            const isUnmarked = currentStatus === undefined;
+                            const isActive = currentAttendance?.status === status;
+                            const isUnmarked = currentAttendance === undefined;
                             return (
                               <button
                                 key={status}
-                                onClick={() => handleAttendanceChange(worker.id, status)}
+                                onClick={() => handleAttendanceChange(worker.id, 'status', status)}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 transform hover:scale-105 flex items-center ${
                                   isUnmarked ? 'bg-gray-700/50 hover:bg-gray-700/70 text-gray-400 border border-gray-600' : getStatusColor(status, isActive)
                                 }`}
@@ -593,6 +612,25 @@ export default function AttendancePage() {
                             );
                           })}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <select
+                            value={currentAttendance?.workType || 'Full'}
+                            onChange={(e) => handleAttendanceChange(worker.id, 'workType', e.target.value)}
+                            className="w-full px-2 py-1 text-sm bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="Full">Full Day</option>
+                            <option value="Half">Half Day</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={currentAttendance?.note || ''}
+                            onChange={(e) => handleAttendanceChange(worker.id, 'note', e.target.value)}
+                            placeholder="Add note..."
+                            className="w-full px-2 py-1 text-sm bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </td>
                       </tr>
                     );

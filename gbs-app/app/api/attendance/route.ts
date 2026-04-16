@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Get attendance records for specific project and date with worker details
-      attendanceRecords = await prisma.attendance.findMany({
+      attendanceRecords = await (prisma as any).attendance.findMany({
         where: {
           project_id: projectIdNum,
           date: {
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     });
     } else {
       // Get all attendance records for the project
-      attendanceRecords = await prisma.attendance.findMany({
+      attendanceRecords = await (prisma as any).attendance.findMany({
         where: {
           project_id: projectIdNum
         },
@@ -113,9 +113,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.worker_id || !body.project_id || !body.date || !body.status) {
+    if (!body.worker_id || !body.project_id || !body.date || !body.status || !body.workType) {
       return NextResponse.json(
-        { error: 'worker_id, project_id, date, and status are required' },
+        { error: 'worker_id, project_id, date, status, and workType are required' },
         { status: 400 }
       );
     }
@@ -143,6 +143,15 @@ export async function POST(request: NextRequest) {
     if (!validStatuses.includes(body.status)) {
       return NextResponse.json(
         { error: 'Invalid status. Must be: Present, Absent, or Half Day' },
+        { status: 400 }
+      );
+    }
+
+    // Validate workType
+    const validWorkTypes = ['Full', 'Half'];
+    if (!validWorkTypes.includes(body.workType)) {
+      return NextResponse.json(
+        { error: 'Invalid workType. Must be: Full or Half' },
         { status: 400 }
       );
     }
@@ -180,23 +189,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upsert attendance record (create or update)
-    const attendanceRecord = await prisma.attendance.upsert({
-      where: {
-        worker_id_date: {
-          worker_id: workerId,
-          date: new Date(attendanceDate.toISOString().split('T')[0] + 'T00:00:00.000Z')
-        }
-      },
-      update: {
-        status: body.status,
-        project_id: projectId
-      },
-      create: {
+    // Create attendance record (allow multiple per day for different projects)
+    const attendanceRecord = await (prisma as any).attendance.create({
+      data: {
         worker_id: workerId,
         project_id: projectId,
         date: new Date(attendanceDate.toISOString().split('T')[0] + 'T00:00:00.000Z'),
-        status: body.status
+        status: body.status,
+        workType: body.workType,
+        note: body.note || null
       },
       include: {
         workers: {
