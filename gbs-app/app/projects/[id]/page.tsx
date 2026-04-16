@@ -386,7 +386,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
+    <>
+      <div className="min-h-screen bg-slate-900 text-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -1010,11 +1011,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       </div>
     </div>
 
-    {/* Add Worker Modal */}
-    <AddWorkerModal
-      isOpen={isWorkerModalOpen}
-      onClose={() => setIsWorkerModalOpen(false)}
-      onWorkerAdded={handleWorkerAdded}
-    />
+      {/* Add Worker Modal */}
+      <AddWorkerModal
+        isOpen={isWorkerModalOpen}
+        onClose={() => setIsWorkerModalOpen(false)}
+        onWorkerAdded={handleWorkerAdded}
+      />
+    </>
   );
 }
