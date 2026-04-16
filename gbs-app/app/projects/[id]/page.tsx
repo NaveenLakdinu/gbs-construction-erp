@@ -719,6 +719,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         )}
+
+        {activeTab === 'attendance' && (
           <div className="space-y-8">
             {/* Attendance Form */}
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">

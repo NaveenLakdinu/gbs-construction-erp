@@ -97,9 +97,10 @@ export default function SalaryReportPage() {
   };
 
   // Worker Ledger functions
-  const fetchWorkers = async () => {
+  const fetchWorkers = async (projectId?: string) => {
     try {
-      const response = await fetch('/api/workers');
+      const url = projectId ? `/api/workers?project_id=${projectId}` : '/api/workers';
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setWorkers(data);
@@ -165,7 +166,8 @@ export default function SalaryReportPage() {
   };
 
   useEffect(() => {
-    fetchWorkers();
+    fetchWorkers('projectId');
+    fetchWorkerBalances();
   }, []);
 
   useEffect(() => {
