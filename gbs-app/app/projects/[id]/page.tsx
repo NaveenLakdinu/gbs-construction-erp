@@ -80,6 +80,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
+  const [dailyRate, setDailyRate] = useState<string>('');
   const [amountEarned, setAmountEarned] = useState<string>('');
   const [amountPaid, setAmountPaid] = useState<string>('');
   const [expenseForm, setExpenseForm] = useState({
@@ -256,8 +257,46 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   // Handle attendance submission
   const handleAttendanceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted!'); // Debug log
     
     const formData = new FormData(e.currentTarget as HTMLFormElement);
+    
+    // Check if all required fields are filled
+    const workerId = formData.get('worker_id');
+    const date = formData.get('date');
+    const status = formData.get('status');
+    const workType = formData.get('workType');
+    const dailyRate = formData.get('dailyRate');
+    const amountEarned = formData.get('amountEarned');
+    const amountPaid = formData.get('amountPaid');
+    
+    console.log('Form validation check:', {
+      workerId,
+      date,
+      status,
+      workType,
+      dailyRate,
+      amountEarned,
+      amountPaid
+    });
+    
+    if (!workerId || !date || !status || !workType || !dailyRate || !amountEarned || !amountPaid) {
+      console.error('Missing required fields!');
+      alert('Please fill in all required fields before submitting.');
+      return;
+    }
+    
+    // Debug: Check if all form data is being collected
+    console.log('Worker ID:', formData.get('worker_id'));
+    console.log('Project ID:', projectId);
+    console.log('Date:', formData.get('date'));
+    console.log('Status:', formData.get('status'));
+    console.log('Work Type:', formData.get('workType'));
+    console.log('Daily Rate:', formData.get('dailyRate'));
+    console.log('Amount Earned:', formData.get('amountEarned'));
+    console.log('Amount Paid:', formData.get('amountPaid'));
+    console.log('Note:', formData.get('note'));
+    
     const attendanceData = {
       worker_id: parseInt(formData.get('worker_id') as string),
       project_id: parseInt(projectId),
@@ -271,6 +310,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     };
 
     try {
+      console.log('Submitting attendance data:', attendanceData);
       const response = await fetch('/api/attendance', {
         method: 'POST',
         headers: {
@@ -279,10 +319,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         body: JSON.stringify(attendanceData),
       });
 
+      console.log('Response status:', response.status);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+
       if (response.ok) {
         // Reset form
         setAttendanceDate(new Date().toISOString().split('T')[0]);
         setSelectedWorker(null);
+        setDailyRate('');
         setAmountEarned('');
         setAmountPaid('');
         const form = e.target as HTMLFormElement;
@@ -299,6 +344,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
     } catch (error) {
       console.error('Failed to add attendance:', error);
+      console.error('Error details:', error);
     }
   };
 
@@ -370,11 +416,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // Handle changes to daily rate and work type fields
   const handleDailyRateChange = (value: string) => {
+    setDailyRate(value);
     setAmountEarned(calculateAmountEarned(value, 'Full')); // Default to Full day calculation
   };
 
   const handleWorkTypeChange = (value: string) => {
-    const currentDailyRate = amountEarned || '0';
+    const currentDailyRate = dailyRate || '0';
     setAmountEarned(calculateAmountEarned(currentDailyRate, value));
   };
 
@@ -860,7 +907,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <WorkerSearchSelect
                       workers={workers}
                       selectedWorker={selectedWorker}
-                      onWorkerSelect={setSelectedWorker}
+                      onWorkerSelect={(worker) => {
+                        setSelectedWorker(worker);
+                        if (worker) {
+                          const rate = worker.daily_rate.toString();
+                          setDailyRate(rate);
+                          setAmountEarned(calculateAmountEarned(rate, 'Full'));
+                        }
+                      }}
                       onAddNewWorker={() => setIsWorkerModalOpen(true)}
                     />
                     <input
@@ -901,10 +955,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       name="dailyRate"
                       step="0.01"
                       min="0"
-                      value={amountEarned}
+                      value={dailyRate}
                       onChange={(e) => {
                         const value = e.target.value;
-                        setAmountEarned(value);
                         handleDailyRateChange(value);
                       }}
                       placeholder={selectedWorker ? `${selectedWorker.daily_rate}` : "Enter daily rate"}
