@@ -43,6 +43,8 @@ interface Attendance {
   workType: string;
   note: string | null;
   dailyRate: number;
+  amountEarned: number;
+  amountPaid: number;
   worker_id: number;
   project_id: number;
   created_at: string;
@@ -78,6 +80,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
+  const [amountEarned, setAmountEarned] = useState<string>('');
+  const [amountPaid, setAmountPaid] = useState<string>('');
   const [expenseForm, setExpenseForm] = useState({
     item_name: '',
     amount: '',
@@ -261,6 +265,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       status: formData.get('status') as string,
       workType: formData.get('workType') as string,
       dailyRate: parseFloat(formData.get('dailyRate') as string),
+      amountEarned: parseFloat(formData.get('amountEarned') as string),
+      amountPaid: parseFloat(formData.get('amountPaid') as string),
       note: formData.get('note') as string
     };
 
@@ -277,6 +283,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         // Reset form
         setAttendanceDate(new Date().toISOString().split('T')[0]);
         setSelectedWorker(null);
+        setAmountEarned('');
+        setAmountPaid('');
         const form = e.target as HTMLFormElement;
         if (form) {
           form.reset();
@@ -347,6 +355,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     } catch (error) {
       console.error('Failed to refresh workers:', error);
     }
+  };
+
+  // Auto-calculate amountEarned based on daily rate and work type
+  const calculateAmountEarned = (dailyRate: string, workType: string) => {
+    const rate = parseFloat(dailyRate) || 0;
+    if (workType === 'Full') {
+      return rate.toString();
+    } else if (workType === 'Half') {
+      return (rate * 0.5).toString();
+    }
+    return '0';
+  };
+
+  // Handle changes to daily rate and work type fields
+  const handleDailyRateChange = (value: string) => {
+    setAmountEarned(calculateAmountEarned(value, 'Full')); // Default to Full day calculation
+  };
+
+  const handleWorkTypeChange = (value: string) => {
+    const currentDailyRate = amountEarned || '0';
+    setAmountEarned(calculateAmountEarned(currentDailyRate, value));
   };
 
   const handleBack = () => {
@@ -746,6 +775,69 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         )}
 
         {activeTab === 'attendance' && (
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Today's Attendance Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+                <h4 className="text-white font-medium mb-3">Money Calculations</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Total Amount Earned:</span>
+                    <span className="text-green-400 font-medium">
+                      {formatCurrency(attendance.reduce((sum, a) => sum + (a.amountEarned || 0), 0))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Total Cash Issued:</span>
+                    <span className="text-blue-400 font-medium">
+                      {formatCurrency(attendance.reduce((sum, a) => sum + (a.amountPaid || 0), 0))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Extra (Advance):</span>
+                    <span className="text-orange-400 font-medium">
+                      {formatCurrency(attendance.reduce((sum, a) => {
+                        const diff = (a.amountPaid || 0) - (a.amountEarned || 0);
+                        return diff > 0 ? diff : 0;
+                      }, 0))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Balance Due:</span>
+                    <span className="text-purple-400 font-medium">
+                      {formatCurrency(attendance.reduce((sum, a) => (a.amountEarned || 0) - (a.amountPaid || 0), 0))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+                <h4 className="text-white font-medium mb-3">Work Type Breakdown</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Full Days:</span>
+                    <span className="text-white font-medium">
+                      {attendance.filter(a => a.workType === 'Full').length} days
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Half Days:</span>
+                    <span className="text-white font-medium">
+                      {attendance.filter(a => a.workType === 'Half').length} days
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Absent Days:</span>
+                    <span className="text-white font-medium">
+                      {attendance.filter(a => a.status === 'Absent').length} days
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'attendance' && (
           <div className="space-y-8">
             {/* Attendance Form */}
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
@@ -796,6 +888,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       name="workType"
                       className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
+                      onChange={(e) => handleWorkTypeChange(e.target.value)}
                     >
                       <option value="Full">Full Day</option>
                       <option value="Half">Half Day</option>
@@ -808,7 +901,39 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       name="dailyRate"
                       step="0.01"
                       min="0"
+                      value={amountEarned}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setAmountEarned(value);
+                        handleDailyRateChange(value);
+                      }}
                       placeholder={selectedWorker ? `${selectedWorker.daily_rate}` : "Enter daily rate"}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Amount Earned (LKR)</label>
+                    <input
+                      type="number"
+                      name="amountEarned"
+                      step="0.01"
+                      min="0"
+                      value={amountEarned}
+                      onChange={(e) => setAmountEarned(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Cash Issued (LKR)</label>
+                    <input
+                      type="number"
+                      name="amountPaid"
+                      step="0.01"
+                      min="0"
+                      value={amountPaid}
+                      onChange={(e) => setAmountPaid(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />

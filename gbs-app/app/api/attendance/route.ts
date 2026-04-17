@@ -113,9 +113,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.worker_id || !body.project_id || !body.date || !body.status || !body.workType || !body.dailyRate) {
+    if (!body.worker_id || !body.project_id || !body.date || !body.status || !body.workType || !body.dailyRate || !body.amountEarned || !body.amountPaid) {
       return NextResponse.json(
-        { error: 'worker_id, project_id, date, status, workType, and dailyRate are required' },
+        { error: 'worker_id, project_id, date, status, workType, dailyRate, amountEarned, and amountPaid are required' },
         { status: 400 }
       );
     }
@@ -165,6 +165,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate amountEarned
+    const amountEarned = parseFloat(body.amountEarned);
+    if (isNaN(amountEarned) || amountEarned < 0) {
+      return NextResponse.json(
+        { error: 'amountEarned must be a positive number' },
+        { status: 400 }
+      );
+    }
+
+    // Validate amountPaid
+    const amountPaid = parseFloat(body.amountPaid);
+    if (isNaN(amountPaid) || amountPaid < 0) {
+      return NextResponse.json(
+        { error: 'amountPaid must be a positive number' },
+        { status: 400 }
+      );
+    }
+
     // Validate date
     const attendanceDate = new Date(body.date);
     if (isNaN(attendanceDate.getTime())) {
@@ -207,6 +225,8 @@ export async function POST(request: NextRequest) {
         status: body.status,
         workType: body.workType,
         dailyRate: dailyRate,
+        amountEarned: amountEarned,
+        amountPaid: amountPaid,
         note: body.note || null
       },
       include: {
