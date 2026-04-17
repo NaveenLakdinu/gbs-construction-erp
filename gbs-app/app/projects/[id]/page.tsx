@@ -42,6 +42,7 @@ interface Attendance {
   status: string;
   workType: string;
   note: string | null;
+  dailyRate: number;
   worker_id: number;
   project_id: number;
   created_at: string;
@@ -149,8 +150,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     let totalSalary = 0;
     
     attendance.forEach((attendanceRecord) => {
-      const worker = workers.find(w => w.id === attendanceRecord.worker_id);
-      if (worker) {
+      if (attendanceRecord.dailyRate) {
         let daysWorked = 0;
         
         // Calculate based on workType
@@ -165,8 +165,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             daysWorked = 0;
         }
         
-        // Ensure daily_rate is converted to number
-        totalSalary += Number(worker.daily_rate) * daysWorked;
+        // Use attendance dailyRate instead of worker daily_rate
+        totalSalary += Number(attendanceRecord.dailyRate) * daysWorked;
       }
     });
     
@@ -260,6 +260,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       date: formData.get('date') as string,
       status: formData.get('status') as string,
       workType: formData.get('workType') as string,
+      dailyRate: parseFloat(formData.get('dailyRate') as string),
       note: formData.get('note') as string
     };
 
@@ -697,11 +698,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
                     const workerTransactions = transactions.filter(t => t.workerId === worker.id);
                     
-                    const totalDays = workerAttendance.reduce((sum, a) => {
-                      return sum + (a.workType === 'Full' ? 1 : 0.5);
+                    const totalEarned = workerAttendance.reduce((sum, a) => {
+                      if (a.dailyRate) {
+                        const days = a.workType === 'Full' ? 1 : 0.5;
+                        return sum + (Number(a.dailyRate) * days);
+                      }
+                      return sum;
                     }, 0);
-                    
-                    const totalEarned = totalDays * Number(worker.daily_rate);
                     const totalWorkerAdvances = workerTransactions
                       .filter(t => t.type === 'Advance')
                       .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -797,6 +800,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       <option value="Full">Full Day</option>
                       <option value="Half">Half Day</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Daily Rate (LKR)</label>
+                    <input
+                      type="number"
+                      name="dailyRate"
+                      step="0.01"
+                      min="0"
+                      placeholder={selectedWorker ? `${selectedWorker.daily_rate}` : "Enter daily rate"}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
                   </div>
                 </div>
                 <div>

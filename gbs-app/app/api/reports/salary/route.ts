@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch attendance records for all workers in the specified month
-    const attendanceRecords = await prisma.attendance.findMany({
+    const attendanceRecords = await (prisma as any).attendance.findMany({
       where: {
         date: dateFilter,
         worker_id: {
@@ -128,16 +128,20 @@ export async function GET(request: NextRequest) {
         (record: any) => record.status === 'Half Day'
       ).length;
 
-      // Calculate total salary
-      // Present days = full daily rate
-      // Half days = 50% of daily rate
-      const totalSalary = (presentDays * Number(worker.daily_rate)) + (halfDays * Number(worker.daily_rate) * 0.5);
+      // Calculate total salary using attendance dailyRate
+      const totalSalary = workerAttendance.reduce((sum: number, record: any) => {
+        if (record.status === 'Present' && record.dailyRate) {
+          const days = record.workType === 'Full' ? 1 : 0.5;
+          return sum + (Number(record.dailyRate) * days);
+        }
+        return sum;
+      }, 0);
 
       salaryReports.push({
         worker_id: worker.id,
         worker_name: worker.name,
-        worker_nic: worker.nic,
-        daily_rate: Number(worker.daily_rate),
+        worker_nic: (worker as any).nic || '',
+        daily_rate: Number((worker as any).daily_rate || 0),
         present_days: presentDays,
         absent_days: absentDays,
         half_days: halfDays,

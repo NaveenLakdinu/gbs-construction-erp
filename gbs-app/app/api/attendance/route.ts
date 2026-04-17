@@ -113,9 +113,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.worker_id || !body.project_id || !body.date || !body.status || !body.workType) {
+    if (!body.worker_id || !body.project_id || !body.date || !body.status || !body.workType || !body.dailyRate) {
       return NextResponse.json(
-        { error: 'worker_id, project_id, date, status, and workType are required' },
+        { error: 'worker_id, project_id, date, status, workType, and dailyRate are required' },
         { status: 400 }
       );
     }
@@ -152,6 +152,15 @@ export async function POST(request: NextRequest) {
     if (!validWorkTypes.includes(body.workType)) {
       return NextResponse.json(
         { error: 'Invalid workType. Must be: Full or Half' },
+        { status: 400 }
+      );
+    }
+
+    // Validate dailyRate
+    const dailyRate = parseFloat(body.dailyRate);
+    if (isNaN(dailyRate) || dailyRate < 0) {
+      return NextResponse.json(
+        { error: 'dailyRate must be a positive number' },
         { status: 400 }
       );
     }
@@ -197,6 +206,7 @@ export async function POST(request: NextRequest) {
         date: new Date(attendanceDate.toISOString().split('T')[0] + 'T00:00:00.000Z'),
         status: body.status,
         workType: body.workType,
+        dailyRate: dailyRate,
         note: body.note || null
       },
       include: {
