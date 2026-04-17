@@ -768,53 +768,143 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
 
               <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Worker Balances</h3>
-                <div className="space-y-3">
-                  {workers.map((worker) => {
-                    const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
-                    const workerTransactions = transactions.filter(t => t.workerId === worker.id);
-                    
-                    const totalEarned = workerAttendance.reduce((sum, a) => {
-                      if (a.dailyRate) {
-                        const days = a.workType === 'Full' ? 1 : 0.5;
-                        return sum + (Number(a.dailyRate) * days);
-                      }
-                      return sum;
-                    }, 0);
-                    const totalWorkerAdvances = workerTransactions
-                      .filter(t => t.type === 'Advance')
-                      .reduce((sum, t) => sum + Number(t.amount), 0);
-                    const totalWorkerDeductions = workerTransactions
-                      .filter(t => t.type === 'Deduction')
-                      .reduce((sum, t) => sum + Number(t.amount), 0);
-                    const totalWorkerBonuses = workerTransactions
-                      .filter(t => t.type === 'Bonus')
-                      .reduce((sum, t) => sum + Number(t.amount), 0);
-                    
-                    const balance = totalEarned - totalWorkerAdvances - totalWorkerDeductions + totalWorkerBonuses;
-                    
-                    return (
-                      <div key={worker.id} className="border border-slate-600 rounded p-3">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-white font-medium">{worker.name}</p>
-                            <p className="text-xs text-gray-400">{worker.nic}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`font-bold ${
-                              balance >= 0 ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                              {formatCurrency(balance)}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Earned: {formatCurrency(totalEarned)} | 
-                              Advances: {formatCurrency(totalWorkerAdvances)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <h3 className="text-lg font-semibold text-white mb-4">Worker Payment Ledger</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-700">
+                    <thead className="bg-slate-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Worker Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Total Days Worked
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Total Earned (LKR)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Total Paid (Cash Issued)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Remaining Balance
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-slate-800 divide-y divide-slate-700">
+                      {workers.map((worker) => {
+                        const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                        const workerTransactions = transactions.filter(t => t.workerId === worker.id);
+                        
+                        // Calculate total days worked
+                        const totalDaysWorked = workerAttendance.reduce((sum, a) => {
+                          if (a.status === 'Present') {
+                            return sum + (a.workType === 'Full' ? 1 : 0.5);
+                          }
+                          return sum;
+                        }, 0);
+                        
+                        // Calculate total earned from attendance
+                        const totalEarned = workerAttendance.reduce((sum, a) => {
+                          return sum + (a.amountEarned || 0);
+                        }, 0);
+                        
+                        // Calculate total paid from attendance + advances
+                        const totalPaidFromAttendance = workerAttendance.reduce((sum, a) => {
+                          return sum + (a.amountPaid || 0);
+                        }, 0);
+                        
+                        const totalAdvances = workerTransactions
+                          .filter(t => t.type === 'Advance')
+                          .reduce((sum, t) => sum + Number(t.amount), 0);
+                        
+                        const totalPaid = totalPaidFromAttendance + totalAdvances;
+                        
+                        // Calculate remaining balance
+                        const balance = totalEarned - totalPaid;
+                        
+                        return (
+                          <tr key={worker.id} className="hover:bg-slate-700">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <p className="text-sm font-medium text-white">{worker.name}</p>
+                                <p className="text-xs text-gray-400">{worker.nic}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {totalDaysWorked.toFixed(1)} days
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-medium">
+                              {formatCurrency(totalEarned)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-medium">
+                              {formatCurrency(totalPaid)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <span className={`font-bold ${
+                                balance >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}>
+                                {formatCurrency(balance)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {/* Summary Row */}
+                      <tr className="bg-slate-700 font-semibold border-t-2 border-slate-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                          TOTALS
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                          {workers.reduce((sum, worker) => {
+                            const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                            return sum + workerAttendance.reduce((daySum, a) => {
+                              if (a.status === 'Present') {
+                                return daySum + (a.workType === 'Full' ? 1 : 0.5);
+                              }
+                              return daySum;
+                            }, 0);
+                          }, 0).toFixed(1)} days
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-bold">
+                          {formatCurrency(workers.reduce((sum, worker) => {
+                            const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                            return sum + workerAttendance.reduce((earnedSum, a) => earnedSum + (a.amountEarned || 0), 0);
+                          }, 0))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-bold">
+                          {formatCurrency(workers.reduce((sum, worker) => {
+                            const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                            const workerTransactions = transactions.filter(t => t.workerId === worker.id);
+                            const totalPaidFromAttendance = workerAttendance.reduce((paidSum, a) => paidSum + (a.amountPaid || 0), 0);
+                            const totalAdvances = workerTransactions
+                              .filter(t => t.type === 'Advance')
+                              .reduce((advanceSum, t) => advanceSum + Number(t.amount), 0);
+                            return sum + totalPaidFromAttendance + totalAdvances;
+                          }, 0))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className="font-bold">
+                            {formatCurrency(workers.reduce((sum, worker) => {
+                              const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                              const workerTransactions = transactions.filter(t => t.workerId === worker.id);
+                              const totalEarned = workerAttendance.reduce((earnedSum, a) => earnedSum + (a.amountEarned || 0), 0);
+                              const totalPaidFromAttendance = workerAttendance.reduce((paidSum, a) => paidSum + (a.amountPaid || 0), 0);
+                              const totalAdvances = workerTransactions
+                                .filter(t => t.type === 'Advance')
+                                .reduce((advanceSum, t) => advanceSum + Number(t.amount), 0);
+                              const totalPaid = totalPaidFromAttendance + totalAdvances;
+                              return sum + (totalEarned - totalPaid);
+                            }, 0))}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  {workers.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      No workers found for this project
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
