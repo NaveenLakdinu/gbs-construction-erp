@@ -1096,14 +1096,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <div className="flex flex-col">
                               <span className={`font-bold ${
-                                netBalance > 0 ? 'text-red-400' : 'text-green-400'
+                                netBalance > 0 ? 'text-yellow-400' : 'text-red-400'
                               }`}>
                                 {formatCurrency(Math.abs(netBalance))}
                               </span>
                               <span className={`text-xs ${
-                                netBalance > 0 ? 'text-red-300' : 'text-green-300'
+                                netBalance > 0 ? 'text-yellow-300' : 'text-red-300'
                               }`}>
-                                {netBalance > 0 ? 'Worker Owes Me (Advance)' : 'I Owe Worker (Due)'}
+                                {netBalance > 0 ? 'Advance (Worker Owes Me)' : 'Due (I Owe Worker)'}
                               </span>
                             </div>
                           </td>
