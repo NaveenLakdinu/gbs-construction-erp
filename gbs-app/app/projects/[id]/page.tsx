@@ -939,117 +939,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
 
-            {/* Daily Payment History */}
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-white">Daily Payment History</h3>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search by worker name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-                  />
-                  <svg
-                    className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-700">
-                  <thead className="bg-slate-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Worker Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Paid Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Note
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-slate-800 divide-y divide-slate-700">
-                    {attendance
-                      .filter(record => {
-                        const worker = workers.find(w => w.id === record.worker_id);
-                        const matchesSearch = !searchTerm || 
-                          worker?.name.toLowerCase().includes(searchTerm.toLowerCase());
-                        return matchesSearch && record.amountPaid && record.amountPaid > 0;
-                      })
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((record) => {
-                        const worker = workers.find(w => w.id === record.worker_id);
-                        if (!worker) return null;
-                        
-                        return (
-                          <tr key={record.id} className="hover:bg-slate-700">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                              {formatDate(record.date)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div>
-                                <p className="text-sm font-medium text-white">{worker.name}</p>
-                                <p className="text-xs text-gray-400">{worker.nic}</p>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                record.status === 'Present' ? 'bg-green-600 text-white' :
-                                record.status === 'Absent' ? 'bg-red-600 text-white' :
-                                'bg-yellow-600 text-white'
-                              }`}>
-                                {record.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-medium">
-                              {formatCurrency(record.amountPaid || 0)}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-300">
-                              <div className="max-w-xs">
-                                <p className="truncate">{record.note || '-'}</p>
-                                {record.workType && (
-                                  <p className="text-xs text-gray-500">Work: {record.workType}</p>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-                {attendance.filter(record => {
-                  const worker = workers.find(w => w.id === record.worker_id);
-                  const matchesSearch = !searchTerm || 
-                    worker?.name.toLowerCase().includes(searchTerm.toLowerCase());
-                  return matchesSearch && record.amountPaid && record.amountPaid > 0;
-                }).length === 0 && (
-                  <div className="text-center py-8 text-gray-400">
-                    {searchTerm ? 'No payment records found matching your search' : 'No payment records found for this project'}
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Daily Payment Logs */}
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
@@ -1118,6 +1007,81 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 {attendance.length === 0 && (
                   <div className="text-center py-8 text-gray-400">
                     No attendance records found for this project
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Worker Balance Summary */}
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Worker Balance Summary</h3>
+                <p className="text-gray-400 text-sm">Site-wise worker balances</p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-700">
+                  <thead className="bg-slate-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Worker Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Total Earned
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Total Paid
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Net Balance
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-slate-800 divide-y divide-slate-700">
+                    {workers.map((worker) => {
+                      const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                      
+                      // Calculate totals for this specific project
+                      const totalEarned = workerAttendance.reduce((sum, a) => sum + (a.amountEarned || 0), 0);
+                      const totalPaid = workerAttendance.reduce((sum, a) => sum + (a.amountPaid || 0), 0);
+                      const netBalance = totalEarned - totalPaid;
+                      
+                      return (
+                        <tr key={worker.id} className="hover:bg-slate-700">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <p className="text-sm font-medium text-white">{worker.name}</p>
+                              <p className="text-xs text-gray-400">{worker.nic}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-medium">
+                            {formatCurrency(totalEarned)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-medium">
+                            {formatCurrency(totalPaid)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex flex-col">
+                              <span className={`font-bold ${
+                                netBalance > 0 ? 'text-red-400' : 'text-green-400'
+                              }`}>
+                                {formatCurrency(Math.abs(netBalance))}
+                              </span>
+                              <span className={`text-xs ${
+                                netBalance > 0 ? 'text-red-300' : 'text-green-300'
+                              }`}>
+                                {netBalance > 0 ? 'Worker Owes Me (Advance)' : 'I Owe Worker (Due)'}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {workers.length === 0 && (
+                  <div className="text-center py-8 text-gray-400">
+                    No workers found for this project
                   </div>
                 )}
               </div>
