@@ -1,0 +1,4 @@
+// This is a temporary fix for the syntax error
+// The issue is a missing closing quote in line 887
+// Original: <span className="font-bold">
+// Fixed: <span className="font-bold">

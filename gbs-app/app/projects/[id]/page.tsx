@@ -83,6 +83,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [dailyRate, setDailyRate] = useState<string>('');
   const [amountEarned, setAmountEarned] = useState<string>('');
   const [amountPaid, setAmountPaid] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [expenseForm, setExpenseForm] = useState({
     item_name: '',
     amount: '',
@@ -724,7 +725,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {activeTab === 'financials' && (
           <div className="space-y-8">
             {/* Financial Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Total Project Debt Card */}
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm mb-1">Total Project Debt</p>
+                    <p className="text-2xl font-bold text-red-400">
+                      {formatCurrency(
+                        workers.reduce((totalDebt, worker) => {
+                          const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                          const totalEarned = workerAttendance.reduce((sum, a) => sum + (a.amountEarned || 0), 0);
+                          const totalPaid = workerAttendance.reduce((sum, a) => sum + (a.amountPaid || 0), 0);
+                          const workerTransactions = transactions.filter(t => t.workerId === worker.id);
+                          const totalAdvances = workerTransactions
+                            .filter(t => t.type === 'Advance')
+                            .reduce((sum, t) => sum + Number(t.amount), 0);
+                          const totalWorkerPaid = totalPaid + totalAdvances;
+                          const balance = totalEarned - totalWorkerPaid;
+                          return totalDebt + (balance > 0 ? balance : 0);
+                        }, 0)
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Amount owed to all workers</p>
+                  </div>
+                  <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6 text-red-400" />
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Salary Summary</h3>
                 <div className="space-y-3">
@@ -908,67 +938,115 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {activeTab === 'attendance' && (
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Today's Attendance Summary</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
-                <h4 className="text-white font-medium mb-3">Money Calculations</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Total Amount Earned:</span>
-                    <span className="text-green-400 font-medium">
-                      {formatCurrency(attendance.reduce((sum, a) => sum + (a.amountEarned || 0), 0))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Total Cash Issued:</span>
-                    <span className="text-blue-400 font-medium">
-                      {formatCurrency(attendance.reduce((sum, a) => sum + (a.amountPaid || 0), 0))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Extra (Advance):</span>
-                    <span className="text-orange-400 font-medium">
-                      {formatCurrency(attendance.reduce((sum, a) => {
-                        const diff = (a.amountPaid || 0) - (a.amountEarned || 0);
-                        return diff > 0 ? diff : 0;
-                      }, 0))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Balance Due:</span>
-                    <span className="text-purple-400 font-medium">
-                      {formatCurrency(attendance.reduce((sum, a) => (a.amountEarned || 0) - (a.amountPaid || 0), 0))}
-                    </span>
-                  </div>
+            {/* Daily Payment History */}
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Daily Payment History</h3>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search by worker name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                  />
+                  <svg
+                    className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
                 </div>
               </div>
-              <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
-                <h4 className="text-white font-medium mb-3">Work Type Breakdown</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Full Days:</span>
-                    <span className="text-white font-medium">
-                      {attendance.filter(a => a.workType === 'Full').length} days
-                    </span>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-700">
+                  <thead className="bg-slate-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Worker Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Paid Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Note
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-slate-800 divide-y divide-slate-700">
+                    {attendance
+                      .filter(record => {
+                        const worker = workers.find(w => w.id === record.worker_id);
+                        const matchesSearch = !searchTerm || 
+                          worker?.name.toLowerCase().includes(searchTerm.toLowerCase());
+                        return matchesSearch && record.amountPaid && record.amountPaid > 0;
+                      })
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((record) => {
+                        const worker = workers.find(w => w.id === record.worker_id);
+                        if (!worker) return null;
+                        
+                        return (
+                          <tr key={record.id} className="hover:bg-slate-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {formatDate(record.date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <p className="text-sm font-medium text-white">{worker.name}</p>
+                                <p className="text-xs text-gray-400">{worker.nic}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                record.status === 'Present' ? 'bg-green-600 text-white' :
+                                record.status === 'Absent' ? 'bg-red-600 text-white' :
+                                'bg-yellow-600 text-white'
+                              }`}>
+                                {record.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-medium">
+                              {formatCurrency(record.amountPaid || 0)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-300">
+                              <div className="max-w-xs">
+                                <p className="truncate">{record.note || '-'}</p>
+                                {record.workType && (
+                                  <p className="text-xs text-gray-500">Work: {record.workType}</p>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+                {attendance.filter(record => {
+                  const worker = workers.find(w => w.id === record.worker_id);
+                  const matchesSearch = !searchTerm || 
+                    worker?.name.toLowerCase().includes(searchTerm.toLowerCase());
+                  return matchesSearch && record.amountPaid && record.amountPaid > 0;
+                }).length === 0 && (
+                  <div className="text-center py-8 text-gray-400">
+                    {searchTerm ? 'No payment records found matching your search' : 'No payment records found for this project'}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Half Days:</span>
-                    <span className="text-white font-medium">
-                      {attendance.filter(a => a.workType === 'Half').length} days
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Absent Days:</span>
-                    <span className="text-white font-medium">
-                      {attendance.filter(a => a.status === 'Absent').length} days
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1160,139 +1238,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
 
-        {/* Budget Progress Bar */}
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-white">Budget Usage</h3>
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-medium ${isOverBudget ? 'text-red-400' : 'text-gray-400'}`}>
-                {budgetUsagePercentage.toFixed(1)}% Used
-              </span>
-              {isOverBudget && (
-                <AlertCircle className="w-4 h-4 text-red-400" />
-              )}
-            </div>
-          </div>
-          
-          <div className="relative">
-            <div className="w-full bg-slate-700 rounded-full h-4 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ease-out ${
-                  isOverBudget 
-                    ? 'bg-red-500' 
-                    : budgetUsagePercentage > 80 
-                      ? 'bg-yellow-500' 
-                      : 'bg-green-500'
-                }`}
-                style={{ width: `${budgetUsagePercentage}%` }}
-              />
-            </div>
-            
-            <div className="flex justify-between mt-2">
-              <span className="text-xs text-gray-400">0%</span>
-              <span className="text-xs text-gray-400">25%</span>
-              <span className="text-xs text-gray-400">50%</span>
-              <span className="text-xs text-gray-400">75%</span>
-              <span className="text-xs text-gray-400">100%</span>
-            </div>
-          </div>
-          
-          <div className="mt-4 flex justify-between text-sm">
-            <div>
-              <p className="text-gray-400">Budget</p>
-              <p className="text-white font-medium">{formatCurrency(totalBudget)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-gray-400">Spent</p>
-              <p className={`font-medium ${isOverBudget ? 'text-red-400' : 'text-white'}`}>
-                {formatCurrency(totalSpent)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Expenses Table */}
-        <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-slate-700">
-            <h2 className="text-xl font-semibold text-white">Recent Expenses</h2>
-            <p className="text-gray-400 mt-1">All expenses for this project</p>
-          </div>
-          
-          {expenses.length === 0 ? (
-            <div className="p-8 text-center">
-              <svg className="w-12 h-12 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-gray-400">No expenses recorded for this project yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Item
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700">
-                  {expenses.map((expense) => (
-                    <tr key={expense.id} className="hover:bg-slate-700/50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                        {formatDate(expense.date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                        {expense.item_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(expense.category)}`}>
-                          {expense.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
-                        {formatCurrency(expense.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Project Info */}
-        <div className="mt-8 bg-slate-800 border border-slate-700 rounded-lg p-6">
-          <h3 className="text-xl font-semibold text-white mb-4">Project Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-gray-400 mb-2">Project Name</p>
-              <p className="text-white">{project.name}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 mb-2">Location</p>
-              <p className="text-white">{project.location || 'Not specified'}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 mb-2">Status</p>
-              <p className="text-white">{project.status}</p>
-            </div>
-            <div>
-              <p className="text-gray-400 mb-2">Created Date</p>
-              <p className="text-white">{formatDate(project.created_at)}</p>
-            </div>
-          </div>
-        </div>
+        
+        
       </div>
-    </div>
+      </div>
 
       {/* Add Worker Modal */}
       <AddWorkerModal
