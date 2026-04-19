@@ -1069,9 +1069,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
                       
                       // Calculate totals for this specific project
-                      const totalEarned = workerAttendance.reduce((sum, a) => sum + (a.amountEarned || 0), 0);
-                      const totalPaid = workerAttendance.reduce((sum, a) => sum + (a.amountPaid || 0), 0);
-                      const netBalance = totalEarned - totalPaid;
+                      let totalEarned = 0;
+                      let totalPaid = 0;
+                      
+                      workerAttendance.forEach((a) => {
+                        totalEarned += Number(a.amountEarned || 0);
+                        totalPaid += Number(a.amountPaid || 0);
+                      });
+                      
+                      const netBalance = totalPaid - totalEarned;
                       
                       return (
                         <tr key={worker.id} className="hover:bg-slate-700">
