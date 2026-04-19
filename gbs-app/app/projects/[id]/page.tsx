@@ -963,6 +963,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         Cash Issued
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Daily Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Note
                       </th>
                     </tr>
@@ -990,6 +993,30 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-medium">
                               {formatCurrency(record.amountPaid || 0)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {(() => {
+                                const dailyBalance = (record.amountPaid || 0) - (record.amountEarned || 0);
+                                if (dailyBalance > 0) {
+                                  return (
+                                    <span className="px-2 py-1 text-xs rounded-full bg-yellow-600 text-white">
+                                      Advance: {formatCurrency(dailyBalance)}
+                                    </span>
+                                  );
+                                } else if (dailyBalance < 0) {
+                                  return (
+                                    <span className="px-2 py-1 text-xs rounded-full bg-blue-600 text-white">
+                                      Due: {formatCurrency(Math.abs(dailyBalance))}
+                                    </span>
+                                  );
+                                } else {
+                                  return (
+                                    <span className="px-2 py-1 text-xs rounded-full bg-green-600 text-white">
+                                      Settled
+                                    </span>
+                                  );
+                                }
+                              })()}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-300">
                               <div className="max-w-xs">
