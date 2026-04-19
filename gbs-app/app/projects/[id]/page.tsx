@@ -1049,6 +1049,79 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
             </div>
+
+            {/* Daily Payment Logs */}
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Daily Payment Logs</h3>
+                <p className="text-gray-400 text-sm">Complete payment history for this project</p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-700">
+                  <thead className="bg-slate-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Worker Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Daily Rate
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Cash Issued
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Note
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-slate-800 divide-y divide-slate-700">
+                    {attendance
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((record) => {
+                        const worker = workers.find(w => w.id === record.worker_id);
+                        if (!worker) return null;
+                        
+                        return (
+                          <tr key={record.id} className="hover:bg-slate-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {formatDate(record.date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <p className="text-sm font-medium text-white">{worker.name}</p>
+                                <p className="text-xs text-gray-400">{worker.nic}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {formatCurrency(record.dailyRate || 0)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-medium">
+                              {formatCurrency(record.amountPaid || 0)}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-300">
+                              <div className="max-w-xs">
+                                <p className="truncate">{record.note || '-'}</p>
+                                {record.workType && (
+                                  <p className="text-xs text-gray-500">Work: {record.workType}</p>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+                {attendance.length === 0 && (
+                  <div className="text-center py-8 text-gray-400">
+                    No attendance records found for this project
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
