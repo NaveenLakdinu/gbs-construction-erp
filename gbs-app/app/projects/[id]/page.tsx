@@ -834,14 +834,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         }, 0);
                         
                         // Calculate total earned from attendance
-                        const totalEarned = workerAttendance.reduce((sum, a) => {
-                          return sum + (a.amountEarned || 0);
-                        }, 0);
+                        let totalEarned = 0;
+                        workerAttendance.forEach((a) => {
+                          totalEarned += Number(a.amountEarned || 0);
+                        });
                         
                         // Calculate total paid from attendance + advances
-                        const totalPaidFromAttendance = workerAttendance.reduce((sum, a) => {
-                          return sum + (a.amountPaid || 0);
-                        }, 0);
+                        let totalPaidFromAttendance = 0;
+                        workerAttendance.forEach((a) => {
+                          totalPaidFromAttendance += Number(a.amountPaid || 0);
+                        });
                         
                         const totalAdvances = workerTransactions
                           .filter(t => t.type === 'Advance')
@@ -850,7 +852,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         const totalPaid = totalPaidFromAttendance + totalAdvances;
                         
                         // Calculate remaining balance
-                        const balance = totalEarned - totalPaid;
+                        const balance = totalPaid - totalEarned;
                         
                         return (
                           <tr key={worker.id} className="hover:bg-slate-700">
@@ -871,9 +873,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                               <span className={`font-bold ${
-                                balance >= 0 ? 'text-green-400' : 'text-red-400'
+                                balance > 0 ? 'text-yellow-400' : 'text-red-400'
                               }`}>
-                                {formatCurrency(balance)}
+                                {formatCurrency(Math.abs(balance))}
                               </span>
                             </td>
                           </tr>
@@ -896,35 +898,64 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           }, 0).toFixed(1)} days
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-bold">
-                          {formatCurrency(workers.reduce((sum, worker) => {
-                            const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
-                            return sum + workerAttendance.reduce((earnedSum, a) => earnedSum + (a.amountEarned || 0), 0);
-                          }, 0))}
+                          {(() => {
+                            let totalEarnedSum = 0;
+                            workers.forEach((worker) => {
+                              const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                              workerAttendance.forEach((a) => {
+                                totalEarnedSum += Number(a.amountEarned || 0);
+                              });
+                            });
+                            return formatCurrency(totalEarnedSum);
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-400 font-bold">
-                          {formatCurrency(workers.reduce((sum, worker) => {
-                            const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
-                            const workerTransactions = transactions.filter(t => t.workerId === worker.id);
-                            const totalPaidFromAttendance = workerAttendance.reduce((paidSum, a) => paidSum + (a.amountPaid || 0), 0);
-                            const totalAdvances = workerTransactions
-                              .filter(t => t.type === 'Advance')
-                              .reduce((advanceSum, t) => advanceSum + Number(t.amount), 0);
-                            return sum + totalPaidFromAttendance + totalAdvances;
-                          }, 0))}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className="font-bold">
-                            {formatCurrency(workers.reduce((sum, worker) => {
+                          {(() => {
+                            let totalPaidSum = 0;
+                            workers.forEach((worker) => {
                               const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
                               const workerTransactions = transactions.filter(t => t.workerId === worker.id);
-                              const totalEarned = workerAttendance.reduce((earnedSum, a) => earnedSum + (a.amountEarned || 0), 0);
-                              const totalPaidFromAttendance = workerAttendance.reduce((paidSum, a) => paidSum + (a.amountPaid || 0), 0);
+                              
+                              let totalPaidFromAttendance = 0;
+                              workerAttendance.forEach((a) => {
+                                totalPaidFromAttendance += Number(a.amountPaid || 0);
+                              });
+                              
                               const totalAdvances = workerTransactions
                                 .filter(t => t.type === 'Advance')
                                 .reduce((advanceSum, t) => advanceSum + Number(t.amount), 0);
-                              const totalPaid = totalPaidFromAttendance + totalAdvances;
-                              return sum + (totalEarned - totalPaid);
-                            }, 0))}
+                              
+                              totalPaidSum += totalPaidFromAttendance + totalAdvances;
+                            });
+                            return formatCurrency(totalPaidSum);
+                          })()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className="font-bold">
+                            {(() => {
+                              let totalBalanceSum = 0;
+                              workers.forEach((worker) => {
+                                const workerAttendance = attendance.filter(a => a.worker_id === worker.id);
+                                const workerTransactions = transactions.filter(t => t.workerId === worker.id);
+                                
+                                let totalEarned = 0;
+                                let totalPaidFromAttendance = 0;
+                                
+                                workerAttendance.forEach((a) => {
+                                  totalEarned += Number(a.amountEarned || 0);
+                                  totalPaidFromAttendance += Number(a.amountPaid || 0);
+                                });
+                                
+                                const totalAdvances = workerTransactions
+                                  .filter(t => t.type === 'Advance')
+                                  .reduce((advanceSum, t) => advanceSum + Number(t.amount), 0);
+                                
+                                const totalPaid = totalPaidFromAttendance + totalAdvances;
+                                const balance = totalPaid - totalEarned;
+                                totalBalanceSum += balance;
+                              });
+                              return formatCurrency(Math.abs(totalBalanceSum));
+                            })()}
                           </span>
                         </td>
                       </tr>
